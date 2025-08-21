@@ -16,7 +16,7 @@ const DataGrid = ({
   loading = false,
   paginationPageSize = 10,
   pagination = true,
-  domLayout = "normal",
+  domLayout = "autoHeight",
   rowHeight = 48,
   headerHeight = 40,
   gridStyles = {},
@@ -121,7 +121,7 @@ const DataGrid = ({
     marginTop: 2,
     flexGrow: 1,
     minHeight: '400px',
-    overflow: 'auto',
+    // overflow: 'auto',
     '& .ag-root': {
       border: '1px solid #E5E7EB',
       borderRadius: '8px',
@@ -170,11 +170,13 @@ const DataGrid = ({
       sx={defaultStyles}
     >
       {loading ? (
-        <Box sx={{ 
+        <Box 
+        sx={{ 
           display: 'flex', 
           justifyContent: 'center', 
           alignItems: 'center',
-          height: '100%' 
+          height: '600px',
+          width: '100%',
         }}>
           <CircularProgress />
         </Box>
@@ -183,8 +185,8 @@ const DataGrid = ({
           rowData={rowData}
           columnDefs={processedColumnDefs}
           defaultColDef={internalDefaultColDef}
-          pagination={pagination}
-          paginationPageSize={paginationPageSize}
+          pagination={true}
+          paginationPageSize={10}
           onGridReady={onGridReady}
           suppressCellFocus={suppressCellFocus}
           modules={[ClientSideRowModelModule]}
