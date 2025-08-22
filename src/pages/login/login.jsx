@@ -19,7 +19,7 @@ const LoginPage = () => {
     // Pre-populate login form with test credentials in non-production
     setFormData(prev => ({
       ...prev,
-      username: 'Ramu',
+      username: 'Tug',
       password: 'Test@123'
     }));
   }, []);
