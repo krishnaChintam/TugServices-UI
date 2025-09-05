@@ -6,7 +6,7 @@ const USER_DATA_KEY = 'userData';
 
 // Create the axios instance with base configuration
 const axiosInstance = axios.create({
-  baseURL: 'https://myavawebapi.azurewebsites.net',
+  baseURL: 'https://tem.api.net',
   headers: {
     'Content-Type': 'application/json',
   },

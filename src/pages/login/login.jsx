@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 const LoginPage = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    username: 'Tug',
+    username: 'Krishna',
     password: 'Test@123',
     rememberMe: false,
   });
@@ -19,7 +19,7 @@ const LoginPage = () => {
     // Pre-populate login form with test credentials in non-production
     setFormData(prev => ({
       ...prev,
-      username: 'Tug',
+      username: 'Krishna',
       password: 'Test@123'
     }));
   }, []);
@@ -101,7 +101,7 @@ const LoginPage = () => {
           {/* Login Form Section */}
           <div className="w-full md:w-1/2 p-4 sm:p-6 space-y-4 flex flex-col justify-center">
             <h5 className="text-sm sm:text-base md:text-xl font-bold text-gray-800 text-center md:text-left">
-              Welcome to Tug Services
+              Welcome to Trikarana Solutions
             </h5>
             <p className="text-xs sm:text-sm text-gray-500 text-center md:text-left">
               Login to your account

@@ -18,7 +18,6 @@ import {
   InputLabel,
   FormControl,
 } from "@mui/material";
-import Toster from "../../components/common/toster";
 const sampleRows = [
   {
     dateTime: "2025-08-21T08:55",
@@ -64,15 +63,6 @@ export default function TugServices() {
 
   return (
     <>
-      <Toster
-        open={toast.open}
-        message={toast.message}
-        severity={toast.severity}
-        autoHideDuration={2000}
-        anchorOrigin={{ vertical: "top", horizontal: "right" }}
-        onClose={() => setToast({ ...toast, open: false })}
-        headerHeight={32} // match your header/AppBar height
-      />
       <div className="min-h-screen flex flex-col bg-gray-50">
         <div className="container mx-auto px-4 pt-6">
           <div className="flex flex-row gap-4 items-center">

@@ -1,20 +1,16 @@
 import {
   FaUser,
   FaChartBar,
-  FaVideo,
-  FaFileInvoiceDollar,
   FaServicestack,
-  FaShieldAlt,
   FaCog,
   FaEnvelope,
   FaSignOutAlt,
   FaChevronLeft,
-  FaList
 } from 'react-icons/fa';
 import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import authService from '@/api/authService';
+import authService from '../api/authService';
 
 const Sidebar = ({ sidebarOpen, toggleSidebar }) => {
   const navigate = useNavigate();
@@ -56,32 +52,32 @@ const Sidebar = ({ sidebarOpen, toggleSidebar }) => {
   return (
     <div
       className={`
-        fixed top-[56px] left-0 h-[calc(100vh-56px)] bg-white border-r shadow-md
+        fixed top-[56px] left-0 h-[calc(100vh-56px)] bg-white border-r
         transition-all duration-300 ease-in-out z-40
         ${sidebarOpen 
-          ? "w-64 translate-x-0" 
+          ? "w-56 translate-x-0" 
           : "w-0 -translate-x-full"}
       `}
     >
       {/* User Profile */}
-      <div className={`px-4 py-4 border-b flex items-center ${!sidebarOpen ? "justify-center hidden" : ""}`}>
+      <div className={`px-3 py-3 border-b flex items-center ${!sidebarOpen ? "justify-center hidden" : ""}`}>
         <div className={sidebarOpen 
-            ? "w-10 h-10 bg-blue-100 items-center rounded-full flex justify-center text-blue-800 mr-3" 
-            : "text-blue-800 hidden"}
+            ? "w-8 h-8 items-center rounded-full flex justify-center text-gray-600 mr-2" 
+            : "text-gray-600 hidden"}
         >
-          <FaUser />
+          <FaUser size={16} />
         </div>
         <div className={sidebarOpen ? "" : "hidden"}>
-          <div className="text-sm text-gray-500">Welcome</div>
-          <div className="font-semibold text-gray-900">{username}</div>
+          <div className="text-xs text-gray-500">Welcome</div>
+          <div className="text-sm font-medium text-gray-900">{username}</div>
         </div>
       </div>
 
       {/* Navigation Menu */}
-      <div className="flex-1 overflow-y-auto py-2">
+      <div className="flex-1 overflow-y-auto py-1">
         <ul>
           {menuItems.map((item, index) => (
-            <li key={index} className="mb-1">
+            <li key={index} className="mb-0.5">
               <a
                 href="#"
                 onClick={(e) => {
@@ -89,15 +85,15 @@ const Sidebar = ({ sidebarOpen, toggleSidebar }) => {
                   handleMenuClick(item.path);
                 }}
                 className={`
-                  flex items-center px-4 py-3 text-sm 
+                  flex items-center px-3 py-2 text-sm rounded-md
                   ${item.active
-                      ? "text-indigo-600 bg-indigo-100 border-l-4 border-indigo-600"
-                      : "text-gray-600 hover:bg-gray-50"
+                      ? "text-blue-600 font-medium"
+                      : "text-gray-600 hover:text-blue-600 hover:bg-gray-50"
                   }
                   ${!sidebarOpen && "justify-center"}
                 `}
               >
-                <span className={`text-lg ${!sidebarOpen ? "mx-auto" : "mr-3"}`}>
+                <span className={`text-base ${!sidebarOpen ? "mx-auto" : "mr-2"}`}>
                   {item.icon}
                 </span>
                 <span className={sidebarOpen ? "" : "hidden"}>{item.text}</span>
@@ -108,19 +104,19 @@ const Sidebar = ({ sidebarOpen, toggleSidebar }) => {
       </div>
 
       {/* Footer Icons */}
-      <div className={`p-4 fixed bottom-0 left-0 right-0 flex ${sidebarOpen ? "justify-between" : "justify-center"}`}>
-        <button className={`text-gray-600 hover:text-blue-600 ${sidebarOpen ? "" : "hidden"}`}>
-          <FaCog />
+      <div className={`p-2 fixed bottom-0 left-0 right-0 flex ${sidebarOpen ? "justify-between" : "justify-center"} border-t`}>
+        <button className={`p-1.5 text-gray-500 hover:text-blue-600 ${sidebarOpen ? "" : "hidden"}`}>
+          <FaCog size={16} />
         </button>
-        <button className={`text-gray-600 hover:text-blue-600 ${sidebarOpen ? "" : "hidden"}`}>
-          <FaEnvelope />
+        <button className={`p-1.5 text-gray-500 hover:text-blue-600 ${sidebarOpen ? "" : "hidden"}`}>
+          <FaEnvelope size={16} />
         </button>
         <button 
           onClick={handleLogout}
-          className={`text-gray-600 hover:text-blue-600 ${sidebarOpen ? "" : "hidden"}`}
+          className={`p-1.5 text-gray-500 hover:text-blue-600 ${sidebarOpen ? "" : "hidden"}`}
           title="Logout"
         >
-          <FaSignOutAlt />
+          <FaSignOutAlt size={16} />
         </button>
       </div>
 
@@ -128,9 +124,9 @@ const Sidebar = ({ sidebarOpen, toggleSidebar }) => {
       {sidebarOpen && (
         <button
           onClick={toggleSidebar}
-          className="absolute top-2 right-2 text-gray-600 hover:text-blue-600 focus:outline-none"
+          className="absolute top-2 right-2 p-1.5 text-gray-500 hover:text-blue-600 focus:outline-none"
         >
-          <FaChevronLeft />
+          <FaChevronLeft size={16} />
         </button>
       )}
     </div>
