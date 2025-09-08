@@ -1,4 +1,5 @@
-import axiosInstance from './axiosConfig';
+import axiosInstance from './axiosConfig.js';
+import { AUTH } from './apiConfig.js';
 
 // Token management helper functions
 const TOKEN_KEY = 'token';
@@ -27,7 +28,7 @@ export const tokenService = {
 export const authService = {
   login: async (credentials) => {
     try {
-      const response = await axiosInstance.post('/api/Login', credentials);
+      const response = await axiosInstance.post(AUTH.LOGIN, credentials);
       
       // Check if the login was successful
       if (!response.data.status) {
@@ -61,7 +62,7 @@ export const authService = {
     // Clear all authentication data
     tokenService.clearToken();    
     // Optionally, you could make a logout API call here if needed
-    // return axiosInstance.post('/api/Logout');
+    // return axiosInstance.post(AUTH.LOGOUT);
   },
   
   // Get current user data from localStorage

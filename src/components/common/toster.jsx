@@ -1,30 +1,48 @@
-import React, { useEffect, useState } from "react";
-import { Snackbar, Alert, LinearProgress } from "@mui/material";
+import React from "react";
+import toast, { Toaster } from "react-hot-toast";
 
-export default function Toster({
-  open,
-  message,
-  severity = "info",
-  autoHideDuration = 2000,
-  anchorOrigin = { vertical: "top", horizontal: "right" },
-  onClose,
-  headerHeight = 64, // default header height in px
+// Toast Container Component
+export default function ToastContainer({ 
+  headerHeight = 64,
+  position = 'top-right',
+  toastOptions = {},
+  duration=2000
 }) {
   return (
-    <Snackbar
-      open={open}
-      autoHideDuration={autoHideDuration}
-      onClose={onClose}
-      anchorOrigin={anchorOrigin}
-      sx={{ marginTop: `${headerHeight}px` }} // Add margin to avoid header
-    >
-      <Alert
-        onClose={onClose}
-        severity={severity}
-        sx={{ width: "100%", position: "relative", paddingBottom: "8px" }}
-      >
-        {message}
-      </Alert>
-    </Snackbar>
+    <Toaster
+      position={position}
+      reverseOrder={false}
+      gutter={8}
+      containerStyle={{
+        top: `${headerHeight + 8}px`, // Add margin to avoid header
+      }}
+      toastOptions={{
+        duration: {duration},
+        style: {
+          background: '#363636',
+          color: '#fff',
+          fontWeight: '500',
+          borderRadius: '8px',
+          padding: '12px 16px',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+        },
+        success: {
+          duration: 4000,
+          style: {
+            background: '#4caf50',
+          },
+        },
+        error: {
+          duration: 5000,
+          style: {
+            background: '#f44336',
+          },
+        },
+        ...toastOptions,
+      }}
+    />
   );
 }
+
+// Export the toast functions for direct use
+export { toast };

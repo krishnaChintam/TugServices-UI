@@ -3,6 +3,7 @@ import { useState } from 'react';
 import Header from './Header';
 import Footer from './Footer';
 import Sidebar from './Sidebar';
+import ToastContainer from './common/toster';
 
 const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -29,6 +30,7 @@ const Layout = () => {
         )}
       </div>
       <Footer />
+      <ToastContainer headerHeight={64} />
     </div>
   );
 };
