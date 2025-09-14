@@ -13,16 +13,16 @@ const ENV = {
 
 // Current environment (you can change this based on your needs)
 const CURRENT_ENV = ENV.DEVELOPMENT;
-
+const URL = 'http://localhost:8080';
 // Service URLs configuration
 export const SERVICE_URLS = {
   [ENV.DEVELOPMENT]: {
-    MAIN_API: 'http://192.168.1.3:8080/',
+    MAIN_API: URL,
     EXTERNAL_API: 'https://tep.api.com',
-    AUTH_SERVICE: 'http://192.168.1.3:8080/',
-    USER_SERVICE: 'http://192.168.1.3:8080/',
-    PAYMENT_SERVICE: 'http://192.168.1.3:8080/',
-    NOTIFICATION_SERVICE: 'http://192.168.1.3:8080/'
+    AUTH_SERVICE: URL,
+    USER_SERVICE: URL,
+    PAYMENT_SERVICE: URL,
+    NOTIFICATION_SERVICE: URL
   },
   [ENV.STAGING]: {
     MAIN_API: 'https://staging-api.tugservices.com/',
@@ -49,61 +49,61 @@ export const getServiceUrls = () => SERVICE_URLS[CURRENT_ENV];
 export const API_ENDPOINTS = {
   // Authentication endpoints
   AUTH: {
-    LOGIN: '/api/Login',
-    LOGOUT: '/api/Logout',
-    REGISTER: '/api/Register',
-    REFRESH_TOKEN: '/api/RefreshToken',
-    FORGOT_PASSWORD: '/api/ForgotPassword',
-    RESET_PASSWORD: '/api/ResetPassword',
-    VERIFY_EMAIL: '/api/VerifyEmail',
-    CHANGE_PASSWORD: '/api/ChangePassword'
+    LOGIN: '/auth/login',
+    LOGOUT: '/Logout',
+    REGISTER: '/Register',
+    REFRESH_TOKEN: '/RefreshToken',
+    FORGOT_PASSWORD: '/ForgotPassword',
+    RESET_PASSWORD: '/ResetPassword',
+    VERIFY_EMAIL: '/VerifyEmail',
+    CHANGE_PASSWORD: '/ChangePassword'
   },
 
   // User management endpoints
   USER: {
-    PROFILE: '/api/User/Profile',
-    UPDATE_PROFILE: '/api/User/UpdateProfile',
-    DELETE_ACCOUNT: '/api/User/DeleteAccount',
-    UPLOAD_AVATAR: '/api/User/UploadAvatar',
-    GET_USERS: '/api/User/GetUsers',
-    GET_USER_BY_ID: '/api/User/GetUserById',
-    UPDATE_USER_STATUS: '/api/User/UpdateStatus'
+    PROFILE: '/User/Profile',
+    UPDATE_PROFILE: '/User/UpdateProfile',
+    DELETE_ACCOUNT: '/User/DeleteAccount',
+    UPLOAD_AVATAR: '/User/UploadAvatar',
+    GET_USERS: '/User/GetUsers',
+    GET_USER_BY_ID: '/User/GetUserById',
+    UPDATE_USER_STATUS: '/User/UpdateStatus'
   },
 
   // Tug services endpoints
   TUG_SERVICES: {
-    GET_ALL_SERVICES: '/api/TugServices/GetAll',
-    GET_SERVICE_BY_ID: '/api/TugServices/GetById',
-    CREATE_SERVICE: '/api/TugServices/Create',
-    UPDATE_SERVICE: '/api/TugServices/Update',
-    DELETE_SERVICE: '/api/TugServices/Delete',
-    SEARCH_SERVICES: '/api/TugServices/Search',
-    GET_SERVICES_BY_CATEGORY: '/api/TugServices/GetByCategory',
-    GET_POPULAR_SERVICES: '/api/TugServices/GetPopular'
+    GET_ALL_SERVICES: '/tug-services/all',
+    GET_SERVICE_BY_ID: '/tug-services',
+    CREATE_SERVICE: '/tug-services/Create',
+    UPDATE_SERVICE: '/tug-services/Update',
+    DELETE_SERVICE: '/tug-services/Delete',
+    SEARCH_SERVICES: '/tug-services/Search',
+    GET_SERVICES_BY_CATEGORY: '/tug-services/GetByCategory',
+    GET_POPULAR_SERVICES: '/tug-services/GetPopular'
   },
 
   // Locations endpoints
   LOCATIONS: {
-    GET_ALL: '/api/locations/all',
-    GET_BY_ID: '/api/locations/GetById',
-    CREATE: '/api/locations/Create',
-    UPDATE: '/api/locations/Update',
+    GET_ALL: '/locations/all',
+    GET_BY_ID: '/locations/GetById',
+    CREATE: '/locations/Create',
+    UPDATE: '/locations/Update',
   },
 
   // Vessels endpoints
   VESSELS: {
-    GET_ALL: '/api/vessels/all',
-    GET_BY_ID: '/api/vessels/GetById',
-    CREATE: '/api/vessels/Create',
-    UPDATE: '/api/vessels/Update',
+    GET_ALL: '/vessels/all',
+    GET_BY_ID: '/vessels/GetById',
+    CREATE: '/vessels/Create',
+    UPDATE: '/vessels/Update',
   },
 
   // Listing endpoints
   LISTING: {
-    GET_ALL: '/api/listing',
-    GET_BY_ID: '/api/listing/GetById',
-    CREATE: '/api/listing/Create',
-    UPDATE: '/api/listing/Update',
+    GET_ALL: '/listing',
+    GET_BY_ID: '/listing/GetById',
+    CREATE: '/listing/Create',
+    UPDATE: '/listing/Update',
   },
 
 };

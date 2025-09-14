@@ -1,34 +1,48 @@
 // Sample data set 1 - Tug Service Timeline
-export const tugServiceTimeline = [
-    {
-      dateTime: "2025-08-21T08:55",
-      description: "Receive Order From MM",
-    },
-    {
-      dateTime: "2025-08-21T09:30",
-      description: "Proceed to assist MT Karolos",
-    },
-    {
-      dateTime: "2025-08-21T08:40",
-      description: "Arrive at RV position",
-    },
-    {
-      dateTime: "2025-08-21T08:45",
-      description: "Tug line made fast",
-    },
-    {
-      dateTime: "2025-08-21T10:15",
-      description: "Tug line cast off",
-    },
-    {
-      dateTime: "2025-08-21T11:15",
-      description: "Service complete",
-    },
-    {
-      dateTime: "2025-08-21T11:45",
-      description: "Back to base tied up at MT ITO Amoy, FWE",
-    },
-  ];
+export const tugServiceTimeline =  [
+  {
+      "activityId": 8,
+      "activityDate": "2025-08-18",
+      "activityTime": "08:40:00.0000000",
+      "description": "RECEIVED ORDER FROM MM"
+  },
+  {
+      "activityId": 9,
+      "activityDate": "2025-08-18",
+      "activityTime": "08:45:00.0000000",
+      "description": "PROCEEDED TO ASSIST MT. KAROLOS"
+  },
+  {
+      "activityId": 10,
+      "activityDate": "2025-08-18",
+      "activityTime": "09:00:00.0000000",
+      "description": "ARRIVED AT RV POSITION"
+  },
+  {
+      "activityId": 11,
+      "activityDate": "2025-08-18",
+      "activityTime": "09:30:00.0000000",
+      "description": "TUG LINE MADE FAST"
+  },
+  {
+      "activityId": 12,
+      "activityDate": "2025-08-18",
+      "activityTime": "12:06:00.0000000",
+      "description": "TUG LINE CAST OFF"
+  },
+  {
+      "activityId": 13,
+      "activityDate": "2025-08-18",
+      "activityTime": "12:30:00.0000000",
+      "description": "SERVICE COMPLETED"
+  },
+  {
+      "activityId": 14,
+      "activityDate": "2025-08-18",
+      "activityTime": "12:35:00.0000000",
+      "description": "RETURNED TO BASE, FWE"
+  }
+]
 
 // Sample data set 2 - Vessel Information
 export const vesselData = [

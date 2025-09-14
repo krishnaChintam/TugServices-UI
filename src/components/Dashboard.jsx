@@ -1,95 +1,75 @@
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
 import { FaSearch, FaFilter, FaSort, FaEdit } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
 import { Box, TextField, MenuItem, IconButton, InputAdornment } from "@mui/material";
 import DataTable from "./common/DataTable";
+import {tugService} from "../api/apiServices";
 
 const Dashboard = () => {
   const [search, setSearch] = useState("");
+  const [data, setData] = useState([]);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [gridApi, setGridApi] = useState(null);
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    const fetchData = async () => {
+      const response = await tugService.getAllServices();
+      setData(response);
+    };
+    fetchData();
+  }, []);
 
-  const rowData = [
-    { 
-      vesselName: "MV Ocean Spirit", 
-      serviceId: "TS-001", 
-      tugAssigned: "Tug Atlas", 
-      draftForward: 8.5, 
-      draftAft: 9.2, 
-      berth: "Berth-05", 
-      status: "Completed", 
-      serviceDate: "2025-08-10" 
-    },
-    { 
-      vesselName: "MV Blue Horizon", 
-      serviceId: "TS-002", 
-      tugAssigned: "Tug Titan", 
-      draftForward: 7.8, 
-      draftAft: 8.1, 
-      berth: "Berth-03", 
-      status: "Ongoing", 
-      serviceDate: "2025-08-12" 
-    },
-    { 
-      vesselName: "MT Sea Pearl", 
-      serviceId: "TS-003", 
-      tugAssigned: "Tug Neptune", 
-      draftForward: 10.1, 
-      draftAft: 10.4, 
-      berth: "Berth-07", 
-      status: "Scheduled", 
-      serviceDate: "2025-08-14" 
-    },
-    { 
-      vesselName: "MV Silver Wave", 
-      serviceId: "TS-004", 
-      tugAssigned: "Tug Hercules", 
-      draftForward: 6.4, 
-      draftAft: 6.9, 
-      berth: "Berth-02", 
-      status: "Completed", 
-      serviceDate: "2025-08-15" 
-    },
-    { 
-      vesselName: "MT Pacific Queen", 
-      serviceId: "TS-005", 
-      tugAssigned: "Tug Poseidon", 
-      draftForward: 9.3, 
-      draftAft: 9.7, 
-      berth: "Berth-09", 
-      status: "Ongoing", 
-      serviceDate: "2025-08-16" 
+const onGridReady = (params) => {
+  setGridApi(params.api);
+};
+
+  const onRowClicked = (props) =>{
+    const data = props?.data;
+    setSelectedItem(data);
+    console.log(data)
+    if (data?.serviceId) {
+      navigate(`/tugservices/${data?.serviceId}`);
     }
-  ];
+
+  };
+
+  const ActionRenderer = (props) => {
+    return (
+      <IconButton
+        size="small"
+        color="primary"
+        onClick={()=>onRowClicked(props)}
+      >
+        <FaEdit />
+      </IconButton>
+    );
+  };
+
+  const handleSearch=(value)=>{
+    console.log(value)
+    gridApi.setQuickFilter(value);
+  }
+
   // Quick stats data
   const columns = [
-    { headerName: "Vessel Name", field: "vesselName", sortable: true, filter: true, flex: 1 },
-    { headerName: "Service ID", field: "serviceId", sortable: true, flex: 1 },
-    { headerName: "Tug Assigned", field: "tugAssigned", sortable: true, flex: 1 },
-    { headerName: "Draft Forward", field: "draftForward", sortable: true, flex: 1 },
-    { headerName: "Draft Aft", field: "draftAft", sortable: true, flex: 1 },
-    { headerName: "Berth", field: "berth", flex: 1 },
-    { headerName: "Status", field: "status", flex: 1 },
-    { headerName: "Service Date", field: "serviceDate", flex: 1 },
+    { headerName: "Vessel Name", field: "vesselName", sortable: true, flex: 1 },
+    { headerName: "Vessel Type", field: "vesselType", sortable: true, flex: 1 },
+    { headerName: "Imo Code", field: "imoCode", sortable: true, flex: 1 },
+    { headerName: "Service Type", field: "serviceType", sortable: true, flex: 1 },
+    { headerName: "Service Date", field: "serviceDate", sortable: true, flex: 1 },
+    { headerName: "Service Remarks", field: "serviceRemarks", sortable: true, flex: 1 },
+    { headerName: "Draught Aft", field: "draughtAft", sortable: true, flex: 1 },
+    { headerName: "Draught Forward", field: "draughtForward", sortable: true, flex: 1 },
+    { headerName: "Ref No", field: "refNo", sortable: true, flex: 1 },
+    { headerName: "Remarks", field: "remarks", sortable: true, flex: 1 },
     {
       headerName: "Actions",
       field: "actions",
       flex: 1,
-      cellRendererFramework: () => (
-        <IconButton size="small" color="primary">
-          <FaEdit />
-        </IconButton>
-      ),
+      cellRenderer: ActionRenderer
     },
   ]
-  const rows = [
-    { vesselName: 'MV Ocean Spirit', serviceId: 'TS-001', tugAssigned: 'Tug Atlas', draftForward: 8.5, draftAft: 9.2, berth: 'Berth-05', status: 'Completed', serviceDate: '2025-08-10' },
-    { vesselName: 'MV Blue Horizon', serviceId: 'TS-002', tugAssigned: 'Tug Titan', draftForward: 7.8, draftAft: 8.1, berth: 'Berth-03', status: 'Ongoing', serviceDate: '2025-08-12' },
-    { vesselName: 'MT Sea Pearl', serviceId: 'TS-003', tugAssigned: 'Tug Neptune', draftForward: 10.1, draftAft: 10.4, berth: 'Berth-07', status: 'Scheduled', serviceDate: '2025-08-14' },
-    { vesselName: 'MV Silver Wave', serviceId: 'TS-004', tugAssigned: 'Tug Hercules', draftForward: 6.4, draftAft: 6.9, berth: 'Berth-02', status: 'Completed', serviceDate: '2025-08-15' },
-    { vesselName: 'MT Pacific Queen', serviceId: 'TS-005', tugAssigned: 'Tug Poseidon', draftForward: 9.3, draftAft: 9.7, berth: 'Berth-09', status: 'Ongoing', serviceDate: '2025-08-16' },
-  ];
-
-  const onRowClicked=()=>{
-
-  }
   
   return (
     <Box className="p-6">
@@ -98,7 +78,7 @@ const Dashboard = () => {
           size="small"
           placeholder="Search a product"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => handleSearch(e.target.value)}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -125,8 +105,11 @@ const Dashboard = () => {
         </Box>
         </Box>
       <DataTable
-        rowData={rows}
+        rowData={data}
+        sortable={true}
+        filter={false}
         columnDefs={columns}
+        onGridReady={onGridReady}
       />
       </Box>
   );

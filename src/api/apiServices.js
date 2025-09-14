@@ -11,6 +11,7 @@ export const tugService = {
   // Flexible method to get all services by endpoint
   getAllServices: async (endpoint = TUG_SERVICES.GET_ALL_SERVICES) => {
     try {
+      console.log(endpoint);
       const response = await axiosInstance.get(endpoint);
       return response.data;
     } catch (error) {

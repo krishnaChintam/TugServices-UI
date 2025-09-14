@@ -7,10 +7,12 @@ const DataTable = ({
   height = '60vh',
   paginationPageSize = 10,
   paginationPageSizeSelector = [10, 20, 50],
+  sortable = false,
+  filter = false
 }) => {
   const defaultColDef = {
-    sortable: true,
-    filter: true,
+    sortable: sortable,
+    filter: filter,
     resizable: true,
   }
 

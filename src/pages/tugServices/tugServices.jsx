@@ -18,23 +18,24 @@ import {
   Alert,
   Tooltip,
 } from "@mui/material";
-
+import { useParams } from "react-router-dom";
 import { FaExclamationCircle } from "react-icons/fa";
 import { locationService, vesselService } from "../../api/apiServices.js";
 import axiosInstance from "../../api/axiosConfig.js";
 import {tugServiceTimeline} from './sampleData.js';
 import { toast } from '../../components/common/toster.jsx';
 import ToastContainer from '../../components/common/toster.jsx';
+import {tugService} from "../../api/apiServices.js";
 
 export default function TugServices() {
   const [rows, setRows] = useState(tugServiceTimeline);
-  
+  const { id } = useParams();
   // State for dropdown data
   const [locations, setLocations] = useState([]);
   const [vessels, setVessels] = useState([]);
   const [loading, setLoading] = useState({ locations: false, vessels: false });
   const [error, setError] = useState({ locations: null, vessels: null });
-  
+  const [defaultFormData,setDefaultFormData] = useState(null)
   // Single form state holding all payload fields
   const [form, setForm] = useState({
     refNo: "",
@@ -86,10 +87,27 @@ export default function TugServices() {
     }
   };
 
+  const fetchSelectedData = async(id)=>{
+    const response = await tugService.getServiceById(id).then((res)=>{
+      console.log(res)
+      if(res?.serviceId){
+        setForm(res);
+        setDefaultFormData(res);
+        setRows(res?.activities)
+      }
+    },(error)=>{
+      console.log(error)
+    })
+  }
+
   // Fetch data on component mount
   useEffect(() => {
     fetchLocations();
     fetchVessels();
+    console.log(id)
+    if(id){
+      fetchSelectedData(id)
+    }
   }, []);
 
   const addRow = () => {
@@ -154,7 +172,11 @@ export default function TugServices() {
   };
 
   // Method to clear form and reset data
-  const handleClear = () => {
+  const handleClearOrReset = () => {
+    if(form?.serviceId){
+      setForm(defaultFormData);
+      return;
+    }
     // Clear form data
     setForm({
       refNo: "",
@@ -388,33 +410,49 @@ export default function TugServices() {
                 <TableBody>
                   {rows.map((row, index) => (
                     <TableRow key={index}>
-                      <TableCell style={{ width: 120 }}>
-                        <TextField
-                          type="datetime-local"
-                          size="small"
-                          variant="outlined"
-                          value={row.dateTime || ""}
-                          style={{ minWidth: 120 }}
-                          onChange={(e) => updateRow(index, 'dateTime', e.target.value)}
-                        />
-                      </TableCell>
-                      <TableCell style={{ width: "80%" }}>
-                        <TextareaAutosize
-                          minRows={1}
-                          style={{
-                            width: "100%",
-                            fontSize: "0.875rem",
-                            padding: "8.5px 14px",
-                            borderRadius: 4,
-                            border: "1px solid #c4c4c4",
-                            resize: "vertical",
-                          }}
-                          placeholder="Enter description"
-                          value={row.description}
-                          onChange={(e) => updateRow(index, 'description', e.target.value)}
-                        />
-                      </TableCell>
-                    </TableRow>
+                    {/* Date field */}
+                    <TableCell style={{ width: 120 }}>
+                      <TextField
+                        type="date"
+                        size="small"
+                        variant="outlined"
+                        value={row.activityDate || ""}
+                        style={{ minWidth: 120 }}
+                        onChange={(e) => updateRow(index, "activityDate", e.target.value)}
+                      />
+                    </TableCell>
+                  
+                    {/* Time field */}
+                    <TableCell style={{ width: 100 }}>
+                      <TextField
+                        type="time"
+                        size="small"
+                        variant="outlined"
+                        value={row.activityTime || ""}
+                        style={{ minWidth: 100 }}
+                        onChange={(e) => updateRow(index, "activityTime", e.target.value)}
+                      />
+                    </TableCell>
+                  
+                    {/* Description */}
+                    <TableCell style={{ width: "70%" }}>
+                      <TextareaAutosize
+                        minRows={1}
+                        style={{
+                          width: "100%",
+                          fontSize: "0.875rem",
+                          padding: "8.5px 14px",
+                          borderRadius: 4,
+                          border: "1px solid #c4c4c4",
+                          resize: "vertical",
+                        }}
+                        placeholder="Enter description"
+                        value={row.description}
+                        onChange={(e) => updateRow(index, "description", e.target.value)}
+                      />
+                    </TableCell>
+                  </TableRow>
+                  
                   ))}
                 </TableBody>
               </Table>
@@ -468,9 +506,9 @@ export default function TugServices() {
               variant="outlined"
               size="small"
               color="secondary"
-              onClick={handleClear}
+              onClick={handleClearOrReset}
             >
-              Clear
+              {form?.serviceId ? "Reset" : "Clear"}
             </Button>
             <Button
               variant="contained"
@@ -478,7 +516,7 @@ export default function TugServices() {
               color="primary"
               onClick={handleSave}
             >
-              Save
+              {form?.serviceId ? "Update" : "Save"}
             </Button>
             <Button
               variant="outlined"

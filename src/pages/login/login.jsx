@@ -7,8 +7,8 @@ import { useNavigate } from 'react-router-dom';
 const LoginPage = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    username: 'Krishna',
-    password: 'Test@123',
+    username: 'Admin',
+    password: 'Admin@123',
     rememberMe: false,
   });
   const [error, setError] = useState('');
@@ -19,8 +19,8 @@ const LoginPage = () => {
     // Pre-populate login form with test credentials in non-production
     setFormData(prev => ({
       ...prev,
-      username: 'Krishna',
-      password: 'Test@123'
+      username: 'Admin',
+      password: 'Admin@123'
     }));
   }, []);
 
@@ -35,8 +35,8 @@ const LoginPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-        navigate('/dashboard');
-        return;
+        // navigate('/dashboard');
+        // return;
     setLoading(true);
     setError('');
 
@@ -48,14 +48,13 @@ const LoginPage = () => {
     }
 
     try {
+      console.log('Attempting login with credentials:', { username: formData.username, password: '***' });
       const response = await authService.login({
         username: formData.username,
         password: formData.password,
-        loginType: '4'
       });
-      
       // Only proceed if login was successful
-      if (response) {
+      if (response && response.success) {
         // Store user data
         if (response.userData) {
           localStorage.setItem('userData', JSON.stringify(response.userData));
@@ -65,9 +64,11 @@ const LoginPage = () => {
         }
         navigate('/dashboard');
       } else {
+        console.log('Login failed: No response received or success false');
         setError('Login failed. Please check your credentials.');
       }
     } catch (err) {
+      console.error('Login error caught:', err);
       setError(err.message || 'Login failed. Please try again.');
     } finally {
       setLoading(false);
