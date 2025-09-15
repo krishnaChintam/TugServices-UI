@@ -278,6 +278,11 @@ export default function TugServices() {
                         value={form.vesselId}
                         onChange={handleChange}
                         disabled={loading.vessels}
+                        renderValue={(selected) => {
+                          if (!selected) return "Select Vessel";
+                          const match = vessels.find((loc) => String(loc.vesselId) === String(selected));
+                          return match ? match.vesselName : selected;
+                        }}
                       >
                         {loading.vessels ? (
                           <MenuItem value="" disabled>
@@ -325,7 +330,11 @@ export default function TugServices() {
                         name="locationId"
                         value={form.locationId}
                         onChange={handleChange}
-                        disabled={loading.locations}
+                        renderValue={(selected) => {
+                          if (!selected) return "Select Location";
+                          const match = locations.find((loc) => String(loc.locationId) === String(selected));
+                          return match ? match.locationName : selected;
+                        }}
                       >
                         {loading.locations ? (
                           <MenuItem value="" disabled>
@@ -336,8 +345,8 @@ export default function TugServices() {
                           <>
                             <MenuItem value="">Select Location</MenuItem>
                             {locations.map((location) => (
-                              <MenuItem key={location.id || location.locationId} value={location.id || location.locationId}>
-                                {location.name || location.locationName || location.title}
+                              <MenuItem key={location.locationId} value={location.locationId}>
+                                {location.locationName}
                               </MenuItem>
                             ))}
                           </>
