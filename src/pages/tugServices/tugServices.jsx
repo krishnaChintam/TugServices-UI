@@ -14,32 +14,31 @@ import {
   TextareaAutosize,
   InputLabel,
   FormControl,
+  FormHelperText,
 } from "@mui/material";
-import { useParams,useNavigate } from "react-router-dom";
-import { locationService, vesselService } from "../../api/apiServices.js";
+import { useParams, useNavigate } from "react-router-dom";
+import { locationService, vesselService, tugService } from "../../api/apiServices.js";
 import { defaultActivitiesList } from './sampleData.js';
 import { toast } from '../../components/common/toster.jsx';
 import ToastContainer from '../../components/common/toster.jsx';
-import { tugService } from "../../api/apiServices.js";
 import Loader from "@/components/Loader.jsx";
 
 export default function TugServices() {
   const [activities, setActivities] = useState(defaultActivitiesList);
   const { id } = useParams();
-  // State for dropdown data
   const [locations, setLocations] = useState([]);
   const [vessels, setVessels] = useState([]);
   const [defaultFormData, setDefaultFormData] = useState(null);
   const [selectedVessel, setSelectedVessel] = useState("");
   const [selectedLocation, setSelectedLocation] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
   const navigate = useNavigate();
-  // Use this new function in useEffect
+
   useEffect(() => {
     fetchOnloadData();
   }, [id]);
 
-  // Single form state holding all payload fields
   const [form, setForm] = useState({
     refNo: "",
     serviceDate: new Date().toISOString().slice(0, 10),
@@ -57,52 +56,53 @@ export default function TugServices() {
     serviceId: null,
   });
 
-  const patchResponseData =(res)=>{
+  const patchResponseData = (res) => {
     setForm(res);
-        setDefaultFormData(res);
-        setActivities(res?.activities);
-
-        setSelectedVessel({
-          vesselId: res?.vesselId,
-          vesselName: res?.vesselName,
-        });
-        setSelectedLocation({
-          locationId: res?.locationId,
-          locationName: res?.locationName,
-        })
-  }
+    setDefaultFormData(res);
+    setActivities(res?.activities);
+    setSelectedVessel({
+      vesselId: res?.vesselId,
+      vesselName: res?.vesselName,
+    });
+    setSelectedLocation({
+      locationId: res?.locationId,
+      locationName: res?.locationName,
+    });
+    setErrors({}); // Clear errors on successful data load
+  };
 
   const fetchSelectedData = async (id) => {
     setLoading(true);
-    const response = await tugService.getServiceById(id).then((res) => {
+    try {
+      const res = await tugService.getServiceById(id);
       if (res?.serviceId) {
-        setLoading(false);
         patchResponseData(res);
       }
-    }, (error) => {
+    } catch (error) {
+      console.error('Error fetching service:', error);
+      toast.error("Unable to fetch service details.");
+    } finally {
       setLoading(false);
-      console.log(error)
-    })
-  }
+    }
+  };
 
   const fetchOnloadData = async () => {
     try {
       setLoading(true);
-      // Run master API calls concurrently and wait for both to complete
       const [locationsData, vesselsData] = await Promise.all([
-        locationService.getAllLocations(), // Call the service directly
-        vesselService.getAllVessels()      // Call the service directly
+        locationService.getAllLocations(),
+        vesselService.getAllVessels(),
       ]);
-      // Update state with the fetched data
       setLocations(locationsData || []);
       setVessels(vesselsData || []);
-      setLoading(false);
       if (id) {
-        await fetchSelectedData(id, locationsData, vesselsData);
+        await fetchSelectedData(id);
       }
     } catch (error) {
-      setLoading(false);
       console.error('Error in fetchOnloadData:', error);
+      toast.error("Failed to load master data.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -132,65 +132,98 @@ export default function TugServices() {
       remarks: form.remarks,
       isActive: form.isActive,
       activities: activities,
-      serviceId: form.serviceId
+      serviceId: form.serviceId,
     };
   };
 
-  const handleSave = async () => {
-    const payload = buildPayload();
-    if(payload?.serviceId){
-    await tugService.updateService(payload?.serviceId,payload).then((res) => {
-      toast.success('Updated successfully');
-      console.log('Update response:', res?.data);
-      patchResponseData(res);
-    }, (error) => {
-      console.error('Error saving:', err);
-      toast.error("Unable to save form");
-    });
-    }else{
-    await tugService.createService(payload).then((res) => {
-      const newId = res?.serviceId;
-      toast.success('Saved successfully',{duration: 2000});
-      navigate(`/tugservices/${newId}`);
-      patchResponseData(res);
+  const validateForm = () => {
+    let tempErrors = {};
+    let isValid = true;
 
-      console.log('Save response:', res?.data);
-    }, (error) => {
-      console.error('Error saving:', err);
-      toast.error("Unable to save form");
-    });
-  }
+    if (!form.refNo) {
+      tempErrors.refNo = true;
+      isValid = false;
+    }
+    if (!selectedLocation?.locationId) {
+      tempErrors.locationId = true;
+      isValid = false;
+    }
+    if (!selectedVessel?.vesselId) {
+      tempErrors.vesselId = true;
+      isValid = false;
+    }
+
+    setErrors(tempErrors);
+    return isValid;
   };
 
-  // Single method to handle all form field changes
+  const handleSave = async () => {
+    if (!validateForm()) {
+      toast.error("Please fill in all mandatory fields.");
+      return;
+    }
+
+    const payload = buildPayload();
+    setLoading(true);
+
+    try {
+      if (payload?.serviceId) {
+        const res = await tugService.updateService(payload.serviceId, payload);
+        toast.success('Updated successfully');
+        patchResponseData(res);
+      } else {
+        const res = await tugService.createService(payload);
+        const newId = res?.serviceId;
+        toast.success('Saved successfully', { duration: 2000 });
+        navigate(`/tugservices/${newId}`);
+        patchResponseData(res);
+      }
+    } catch (err) {
+      console.error('Error saving:', err);
+      toast.error("Unable to save form");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm(prev => ({ ...prev, [name]: value }));
   };
 
-  // Method to clear form and reset data
   const handleClearOrReset = () => {
     if (form?.serviceId) {
       setForm(defaultFormData);
-      return;
+      setActivities(defaultFormData?.activities || defaultActivitiesList);
+      setSelectedLocation({
+        locationId: defaultFormData?.locationId,
+        locationName: defaultFormData?.locationName,
+      });
+      setSelectedVessel({
+        vesselId: defaultFormData?.vesselId,
+        vesselName: defaultFormData?.vesselName,
+      });
+    } else {
+      setForm({
+        refNo: "",
+        serviceDate: new Date().toISOString().slice(0, 10),
+        locationId: "",
+        vesselId: "",
+        imoCode: "",
+        vesselType: "",
+        lengthOverall: "",
+        draughtForward: "",
+        draughtAft: "",
+        serviceType: "",
+        serviceRemarks: "",
+        remarks: "",
+        isActive: 1,
+      });
+      setActivities(defaultActivitiesList);
+      setSelectedLocation("");
+      setSelectedVessel("");
     }
-    // Clear form data
-    setForm({
-      refNo: "",
-      serviceDate: new Date().toISOString().slice(0, 10),
-      locationId: "",
-      vesselId: "",
-      imoCode: "",
-      vesselType: "",
-      lengthOverall: "",
-      draughtForward: "",
-      draughtAft: "",
-      serviceType: "",
-      serviceRemarks: "",
-      remarks: "",
-      isActive: 1,
-    });
-    setActivities(defaultActivitiesList);
+    setErrors({}); // Clear errors on reset
     toast('Cleared and refreshed data!', {
       duration: 2000,
       icon: '⚠️',
@@ -208,7 +241,8 @@ export default function TugServices() {
       setSelectedLocation({
         locationId: locationData?.locationId,
         locationName: locationData?.locationName,
-      })
+      });
+      setForm(prev => ({ ...prev, locationId: value })); // Update form state
     } else {
       const vesselData = vessels.find((v) => v.vesselId === value);
       setSelectedVessel({
@@ -217,30 +251,31 @@ export default function TugServices() {
       });
       setForm({
         ...form,
+        vesselId: vesselData?.vesselId, // Update form state
         imoCode: vesselData?.imoCode,
         vesselType: vesselData?.vesselType,
         draughtAft: vesselData?.arrDraft,
         lengthOverall: vesselData?.loa,
-        draughtForward: vesselData?.dwt
+        draughtForward: vesselData?.dwt,
       });
     }
   };
 
   return (
     <>
-    {/* The Loader will only be visible when the 'loading' state is true */}
-    <Loader show={loading} />
+      <Loader show={loading} />
       <ToastContainer headerHeight={64} />
       <div className="min-h-screen flex flex-col bg-gray-50">
         <div className="container mx-auto px-4 pt-6">
           <div className="flex flex-row gap-4 items-center">
             <TextField
               size="small"
-              label="Ref Num:"
+              label="Ref Num: *"
               variant="standard"
               name="refNo"
               value={form.refNo}
               onChange={handleChange}
+              error={errors.refNo}
             />
             <TextField
               size="small"
@@ -258,82 +293,73 @@ export default function TugServices() {
           <Card>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Left Column */}
                 <div className="space-y-3">
-                  <div>
-                    <FormControl
-                      fullWidth
-                      size="small"
-                      variant="outlined"
+                  <FormControl
+                    fullWidth
+                    size="small"
+                    variant="outlined"
+                    error={errors.vesselId}
+                  >
+                    <InputLabel id="vessel-label">
+                      <div className="flex items-center gap-1">
+                        Vessel Name *
+                      </div>
+                    </InputLabel>
+                    <Select
+                      labelId="vessel-label"
+                      label="Vessel Name *"
+                      name="vesselId"
+                      value={selectedVessel?.vesselId || ''}
+                      onChange={handleSelectChange}
                     >
-                      <InputLabel id="vessel-label">
-                        <div className="flex items-center gap-1">
-                          Vessel Name
-                        </div>
-                      </InputLabel>
-                      <Select
-                        labelId="vessel-label"
-                        label="Vessel Name"
-                        name="vesselId"
-                        value={selectedVessel?.vesselId || ''}
-                        onChange={handleSelectChange}
-                      >
-                        <MenuItem value="">
-                          <em>None</em>
+                      <MenuItem value="">
+                        <em>None</em>
+                      </MenuItem>
+                      {vessels.map((item) => (
+                        <MenuItem key={item.vesselId} value={item.vesselId}>
+                          {item.vesselName}
                         </MenuItem>
-                        {vessels.map((item) => (
-                          <MenuItem key={item.vesselId} value={item.vesselId}>
-                            {item.vesselName}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </div>
+                      ))}
+                    </Select>
+                  </FormControl>
                   <TextField size="small" fullWidth label="Length Overall (M)" name="lengthOverall" value={form.lengthOverall} onChange={handleChange} />
                 </div>
-
-                {/* Right Column */}
                 <div className="space-y-3">
-                  <div>
-                    <FormControl
-                      fullWidth
-                      size="small"
-                      variant="outlined"
+                  <FormControl
+                    fullWidth
+                    size="small"
+                    variant="outlined"
+                    error={errors.locationId}
+                  >
+                    <InputLabel id="location-label">
+                      <div className="flex items-center gap-1">
+                        Location *
+                      </div>
+                    </InputLabel>
+                    <Select
+                      labelId="location-label"
+                      label="Location *"
+                      name="locationId"
+                      value={selectedLocation?.locationId || ''}
+                      onChange={handleSelectChange}
                     >
-                      <InputLabel id="location-label">
-                        <div className="flex items-center gap-1">
-                          Location
-                        </div>
-                      </InputLabel>
-                      <Select
-                        labelId="location-label"
-                        label="Location"
-                        name="locationId"
-                        value={selectedLocation?.locationId || ''}
-                        onChange={handleSelectChange}
-                      >
-                        <MenuItem value="">
-                          <em>None</em>
+                      <MenuItem value="">
+                        <em>None</em>
+                      </MenuItem>
+                      {locations.map((item) => (
+                        <MenuItem key={item.locationId} value={item.locationId}>
+                          {item.locationName}
                         </MenuItem>
-                        {/* Map through the locations array to create the dropdown options */}
-                        {locations.map((item) => (
-                          <MenuItem key={item.locationId} value={item.locationId}>
-                            {item.locationName}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </div>
+                      ))}
+                    </Select>
+                  </FormControl>
                   <div className="grid grid-cols-2 gap-3">
                     <TextField size="small" fullWidth label="Draught Fwd (M)" name="draughtForward" value={form.draughtForward} onChange={handleChange} />
                     <TextField size="small" fullWidth label="Draught Aft (M)" name="draughtAft" value={form.draughtAft} onChange={handleChange} />
                   </div>
                 </div>
-
                 <div className="space-y-3">
-                  <div>
-                    <TextField size="small" fullWidth label="IMO No" name="imoCode" value={form.imoCode} onChange={handleChange} />
-                  </div>
+                  <TextField size="small" fullWidth label="IMO No" name="imoCode" value={form.imoCode} onChange={handleChange} />
                   <TextField size="small" fullWidth label="Type of Vessel" name="vesselType" value={form.vesselType} onChange={handleChange} />
                 </div>
               </div>
@@ -359,7 +385,6 @@ export default function TugServices() {
                     <MenuItem value="SHIFTING">Shifting</MenuItem>
                   </Select>
                 </FormControl>
-
                 <TextField
                   size="small"
                   fullWidth
@@ -381,14 +406,14 @@ export default function TugServices() {
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell>Date Time</TableCell>
+                    <TableCell>Date</TableCell>
+                    <TableCell>Time</TableCell>
                     <TableCell>Description</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {activities.map((row, index) => (
                     <TableRow key={index}>
-                      {/* Date field */}
                       <TableCell style={{ width: 120 }}>
                         <TextField
                           type="date"
@@ -399,8 +424,6 @@ export default function TugServices() {
                           onChange={(e) => updateRow(index, "activityDate", e.target.value)}
                         />
                       </TableCell>
-
-                      {/* Time field */}
                       <TableCell style={{ width: 100 }}>
                         <TextField
                           type="time"
@@ -430,13 +453,11 @@ export default function TugServices() {
                         />
                       </TableCell>
                     </TableRow>
-
                   ))}
                 </TableBody>
               </Table>
               <div className="mt-4">
                 <Button
-                  // startIcon={<AddIcon />}
                   variant="outlined"
                   size="small"
                   onClick={addRow}
@@ -478,7 +499,6 @@ export default function TugServices() {
               />
             </CardContent>
           </Card>
-
           <div className="mt-4 flex gap-2 justify-center">
             <Button
               variant="outlined"
