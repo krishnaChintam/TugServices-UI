@@ -15,8 +15,7 @@ import {
   InputLabel,
   FormControl,
 } from "@mui/material";
-import { useParams } from "react-router-dom";
-import { FaExclamationCircle } from "react-icons/fa";
+import { useParams,useNavigate } from "react-router-dom";
 import { locationService, vesselService } from "../../api/apiServices.js";
 import { defaultActivitiesList } from './sampleData.js';
 import { toast } from '../../components/common/toster.jsx';
@@ -34,6 +33,7 @@ export default function TugServices() {
   const [selectedVessel, setSelectedVessel] = useState("");
   const [selectedLocation, setSelectedLocation] = useState("");
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
   // Use this new function in useEffect
   useEffect(() => {
     fetchOnloadData();
@@ -150,7 +150,7 @@ export default function TugServices() {
     }else{
     await tugService.createService(payload).then((res) => {
       const newId = res?.serviceId;
-      toast.success('Saved successfully');
+      toast.success('Saved successfully',{duration: 2000});
       navigate(`/tugservices/${newId}`);
       patchResponseData(res);
 
@@ -215,8 +215,15 @@ export default function TugServices() {
         vesselId: vesselData.vesselId,
         vesselName: vesselData.vesselName,
       });
+      setForm({
+        ...form,
+        imoCode: vesselData?.imoCode,
+        vesselType: vesselData?.vesselType,
+        draughtAft: vesselData?.arrDraft,
+        lengthOverall: vesselData?.loa,
+        draughtForward: vesselData?.dwt
+      });
     }
-
   };
 
   return (
