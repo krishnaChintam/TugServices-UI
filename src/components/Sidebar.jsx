@@ -2,15 +2,12 @@ import {
   FaUser,
   FaChartBar,
   FaServicestack,
-  FaCog,
-  FaEnvelope,
   FaSignOutAlt,
   FaChevronLeft,
 } from 'react-icons/fa';
 import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import authService from '../api/authService';
 
 const Sidebar = ({ sidebarOpen, toggleSidebar }) => {
   const navigate = useNavigate();
@@ -33,19 +30,14 @@ const Sidebar = ({ sidebarOpen, toggleSidebar }) => {
     { icon: <FaServicestack />, text: 'Tug Services', path: '/tugservices' },
   ];
 
-  const handleMenuClick = (path) => {
-    if (path) {
-      navigate(path);
-      // Close sidebar on mobile after navigation
-      toggleSidebar();
+  const handleMenuClick = (item) => {
+    if (item.path) {
+      navigate(item.path);
     }
+    toggleSidebar();
   };
-
+  
   const handleLogout = () => {
-    // Call the logout method from authService
-    authService.logout();
-    
-    // Navigate to login page
     navigate('/login');
   };
 
@@ -54,23 +46,34 @@ const Sidebar = ({ sidebarOpen, toggleSidebar }) => {
       className={`
         fixed top-[56px] left-0 h-[calc(100vh-56px)] bg-white border-r
         transition-all duration-300 ease-in-out z-40
-        ${sidebarOpen 
-          ? "w-56 translate-x-0" 
-          : "w-0 -translate-x-full"}
+        ${sidebarOpen ? "w-56 translate-x-0" : "w-0 -translate-x-full"}
       `}
     >
-      {/* User Profile */}
-      <div className={`px-3 py-3 border-b flex items-center ${!sidebarOpen ? "justify-center hidden" : ""}`}>
-        <div className={sidebarOpen 
-            ? "w-8 h-8 items-center rounded-full flex justify-center text-gray-600 mr-2" 
-            : "text-gray-600 hidden"}
-        >
-          <FaUser size={16} />
-        </div>
+      {/* Sidebar Header with User Info and Toggle Button */}
+      <div className={`flex items-center justify-between px-4 py-3 border-b ${!sidebarOpen ? "hidden" : ""}`}>
+        <div className="flex items-center">
+          <div className="w-8 h-8 flex items-center justify-center text-gray-600 mr-2">
+            <FaUser size={16} />
+          </div>
         <div className={sidebarOpen ? "" : "hidden"}>
-          <div className="text-xs text-gray-500">Welcome</div>
-          <div className="text-sm font-medium text-gray-900">{username}</div>
+            <div className="text-xs text-gray-500">Welcome</div>
+            <div className="text-sm font-medium text-gray-900">{username}</div>
+          </div>
         </div>
+        {/* Toggle Button */}
+        <button
+          onClick={toggleSidebar}
+          className="p-2 text-gray-500 hover:text-blue-600 focus:outline-none focus:ring-0 bg-transparent border-none transform transition-all duration-200 group"
+          title="Close Menu"
+        >
+          <div className="flex items-center transform transition-transform duration-200 group-hover:-translate-x-1">
+            <FaChevronLeft size={16} />
+            <FaChevronLeft
+              size={16}
+              className="opacity-0 group-hover:opacity-100 -ml-2 transition-opacity duration-200"
+            />
+          </div>
+        </button>
       </div>
 
       {/* Navigation Menu */}
@@ -82,20 +85,18 @@ const Sidebar = ({ sidebarOpen, toggleSidebar }) => {
                 href="#"
                 onClick={(e) => {
                   e.preventDefault();
-                  handleMenuClick(item.path);
+                  handleMenuClick(item);
                 }}
                 className={`
-                  flex items-center px-3 py-2 text-sm rounded-md
+                  flex items-center px-4 py-2 text-sm rounded-md
                   ${item.active
-                      ? "text-blue-600 font-medium"
-                      : "text-gray-600 hover:text-blue-600 hover:bg-gray-50"
+                    ? "text-blue-600 font-medium"
+                    : "text-gray-600 hover:text-blue-600 hover:bg-gray-50"
                   }
-                  ${!sidebarOpen && "justify-center"}
+                  ${!sidebarOpen ? "justify-center" : ""}
                 `}
               >
-                <span className={`text-base ${!sidebarOpen ? "mx-auto" : "mr-2"}`}>
-                  {item.icon}
-                </span>
+                <span className="text-base mr-2">{item.icon}</span>
                 <span className={sidebarOpen ? "" : "hidden"}>{item.text}</span>
               </a>
             </li>
@@ -105,30 +106,22 @@ const Sidebar = ({ sidebarOpen, toggleSidebar }) => {
 
       {/* Footer Icons */}
       <div className={`p-2 fixed bottom-0 left-0 right-0 flex ${sidebarOpen ? "justify-between" : "justify-center"} border-t`}>
-        <button className={`p-1.5 text-gray-500 hover:text-blue-600 ${sidebarOpen ? "" : "hidden"}`}>
-          <FaCog size={16} />
-        </button>
-        <button className={`p-1.5 text-gray-500 hover:text-blue-600 ${sidebarOpen ? "" : "hidden"}`}>
-          <FaEnvelope size={16} />
-        </button>
-        <button 
-          onClick={handleLogout}
-          className={`p-1.5 text-gray-500 hover:text-blue-600 ${sidebarOpen ? "" : "hidden"}`}
-          title="Logout"
-        >
-          <FaSignOutAlt size={16} />
-        </button>
-      </div>
-
-      {/* Toggle Button - Visible on mobile when sidebar is open */}
-      {sidebarOpen && (
-        <button
-          onClick={toggleSidebar}
-          className="absolute top-2 right-2 p-1.5 text-gray-500 hover:text-blue-600 focus:outline-none"
-        >
-          <FaChevronLeft size={16} />
-        </button>
-      )}
+      <button
+    onClick={handleLogout}
+    className={`
+      flex items-center px-4 py-2 text-sm text-gray-600 rounded-md
+      hover:text-blue-600 hover:bg-gray-50
+      transition-all duration-200
+      ${sidebarOpen ? "w-full justify-start" : "hidden"}
+    `}
+    title="Logout"
+  >
+    <span className="text-base">
+      <FaSignOutAlt size={16} />
+    </span>
+    {sidebarOpen && <span className="ml-2">Logout</span>}
+  </button>
+</div>
     </div>
   );
 };

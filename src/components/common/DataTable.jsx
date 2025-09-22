@@ -4,7 +4,7 @@ import { AgGridReact } from 'ag-grid-react'
 const DataTable = ({
   columnDefs = [],
   rowData = [],
-  height = '60vh',
+  height = '70vh',
   paginationPageSize = 10,
   paginationPageSizeSelector = [10, 20, 50],
   sortable = false,

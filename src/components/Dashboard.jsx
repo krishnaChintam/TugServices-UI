@@ -79,7 +79,7 @@ const onGridReady = (params) => {
    {/* The Loader will only be visible when the 'loading' state is true */}
    <Loader show={loading} />
     <Box className="p-6">
-    <Box className="flex justify-between items-center mb-4">
+    {/* <Box className="flex justify-between items-center mb-4">
         <TextField
           size="small"
           placeholder="Search a product"
@@ -95,7 +95,6 @@ const onGridReady = (params) => {
           className="w-1/3"
         />
 
-        {/* Filter & Sort */}
         <Box className="flex gap-2">
           <TextField select size="small" label="Filter by" className="w-40">
             <MenuItem value="all">All</MenuItem>
@@ -109,7 +108,7 @@ const onGridReady = (params) => {
             <MenuItem value="expire">Expire Date</MenuItem>
           </TextField>
         </Box>
-        </Box>
+        </Box> */}
       <DataTable
         rowData={data}
         sortable={true}

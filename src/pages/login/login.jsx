@@ -7,8 +7,8 @@ import { useNavigate } from 'react-router-dom';
 const LoginPage = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    username: 'Admin',
-    password: 'Admin@123',
+    username: '',
+    password: '',
     rememberMe: false,
   });
   const [error, setError] = useState('');
@@ -19,8 +19,8 @@ const LoginPage = () => {
     // Pre-populate login form with test credentials in non-production
     setFormData(prev => ({
       ...prev,
-      username: 'Admin',
-      password: 'Admin@123'
+      username: '',
+      password: ''
     }));
   }, []);
 
