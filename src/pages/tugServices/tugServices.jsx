@@ -14,28 +14,31 @@ import {
   TextareaAutosize,
   InputLabel,
   FormControl,
-  CircularProgress,
-  Alert,
-  Tooltip,
 } from "@mui/material";
 import { useParams } from "react-router-dom";
 import { FaExclamationCircle } from "react-icons/fa";
 import { locationService, vesselService } from "../../api/apiServices.js";
-import axiosInstance from "../../api/axiosConfig.js";
-import {tugServiceTimeline} from './sampleData.js';
+import { defaultActivitiesList } from './sampleData.js';
 import { toast } from '../../components/common/toster.jsx';
 import ToastContainer from '../../components/common/toster.jsx';
-import {tugService} from "../../api/apiServices.js";
+import { tugService } from "../../api/apiServices.js";
+import Loader from "@/components/Loader.jsx";
 
 export default function TugServices() {
-  const [rows, setRows] = useState(tugServiceTimeline);
+  const [activities, setActivities] = useState(defaultActivitiesList);
   const { id } = useParams();
   // State for dropdown data
   const [locations, setLocations] = useState([]);
   const [vessels, setVessels] = useState([]);
-  const [loading, setLoading] = useState({ locations: false, vessels: false });
-  const [error, setError] = useState({ locations: null, vessels: null });
-  const [defaultFormData,setDefaultFormData] = useState(null)
+  const [defaultFormData, setDefaultFormData] = useState(null);
+  const [selectedVessel, setSelectedVessel] = useState("");
+  const [selectedLocation, setSelectedLocation] = useState("");
+  const [loading, setLoading] = useState(false);
+  // Use this new function in useEffect
+  useEffect(() => {
+    fetchOnloadData();
+  }, [id]);
+
   // Single form state holding all payload fields
   const [form, setForm] = useState({
     refNo: "",
@@ -51,95 +54,74 @@ export default function TugServices() {
     serviceRemarks: "",
     remarks: "",
     isActive: 1,
+    serviceId: null,
   });
 
-
-
-  // Fetch locations data
-  const fetchLocations = async () => {
-    setLoading(prev => ({ ...prev, locations: true }));
-    setError(prev => ({ ...prev, locations: null }));
-    try {
-      const data = await locationService.getAllLocations();
-      setLocations(data || []);
-    } catch (error) {
-      console.error('Error fetching locations:', error);
-      setError(prev => ({ ...prev, locations: error.message }));
-      toast.error(`Failed to load locations: ${error.message}`);
-    } finally {
-      setLoading(prev => ({ ...prev, locations: false }));
-    }
-  };
-
-  // Fetch vessels data
-  const fetchVessels = async () => {
-    setLoading(prev => ({ ...prev, vessels: true }));
-    setError(prev => ({ ...prev, vessels: null }));
-    try {
-      const data = await vesselService.getAllVessels();
-      setVessels(data || []);
-    } catch (error) {
-      console.error('Error fetching vessels:', error);
-      setError(prev => ({ ...prev, vessels: error.message }));
-      toast.error(`Failed to load vessels: ${error.message}`);
-    } finally {
-      setLoading(prev => ({ ...prev, vessels: false }));
-    }
-  };
-
-  const fetchSelectedData = async(id)=>{
-    const response = await tugService.getServiceById(id).then((res)=>{
-      console.log(res)
-      if(res?.serviceId){
-        setForm(res);
+  const patchResponseData =(res)=>{
+    setForm(res);
         setDefaultFormData(res);
-        setRows(res?.activities)
+        setActivities(res?.activities);
+
+        setSelectedVessel({
+          vesselId: res?.vesselId,
+          vesselName: res?.vesselName,
+        });
+        setSelectedLocation({
+          locationId: res?.locationId,
+          locationName: res?.locationName,
+        })
+  }
+
+  const fetchSelectedData = async (id) => {
+    setLoading(true);
+    const response = await tugService.getServiceById(id).then((res) => {
+      if (res?.serviceId) {
+        setLoading(false);
+        patchResponseData(res);
       }
-    },(error)=>{
+    }, (error) => {
+      setLoading(false);
       console.log(error)
     })
   }
 
-  // Fetch data on component mount
-  useEffect(() => {
-    fetchLocations();
-    fetchVessels();
-    console.log(id)
-    if(id){
-      fetchSelectedData(id)
+  const fetchOnloadData = async () => {
+    try {
+      setLoading(true);
+      // Run master API calls concurrently and wait for both to complete
+      const [locationsData, vesselsData] = await Promise.all([
+        locationService.getAllLocations(), // Call the service directly
+        vesselService.getAllVessels()      // Call the service directly
+      ]);
+      // Update state with the fetched data
+      setLocations(locationsData || []);
+      setVessels(vesselsData || []);
+      setLoading(false);
+      if (id) {
+        await fetchSelectedData(id, locationsData, vesselsData);
+      }
+    } catch (error) {
+      setLoading(false);
+      console.error('Error in fetchOnloadData:', error);
     }
-  }, []);
+  };
 
   const addRow = () => {
-    setRows([...rows, { dateTime: "", description: "" }]);
+    setActivities([...activities, { activityId: null, activityDate: "", activityTime: '', description: '' }]);
   };
 
   const updateRow = (index, key, value) => {
-    setRows(prev => prev.map((r, i) => (i === index ? { ...r, [key]: value } : r)));
+    setActivities(prev => prev.map((r, i) => (i === index ? { ...r, [key]: value } : r)));
   };
 
   const buildPayload = () => {
-    const selectedLocationObj = locations.find(l => (l.id || l.locationId) === form.locationId);
-    const selectedVesselObj = vessels.find(v => (v.id || v.vesselId) === form.vesselId);
-
-    const activities = rows
-      .filter(r => (r.dateTime && r.description))
-      .map(r => {
-        const [datePart, timePart] = (r.dateTime || "").split("T");
-        return {
-          activityDate: datePart || form.serviceDate,
-          activityTime: (timePart || "").slice(0,5),
-          description: r.description || ""
-        };
-      });
-
     return {
       refNo: form.refNo,
       serviceDate: form.serviceDate,
-      locationId: form.locationId || null,
-      locationName: (selectedLocationObj?.name || selectedLocationObj?.locationName || selectedLocationObj?.title || ""),
-      vesselId: form.vesselId || null,
-      vesselName: (selectedVesselObj?.name || selectedVesselObj?.vesselName || selectedVesselObj?.title || ""),
+      locationId: selectedLocation?.locationId || null,
+      locationName: selectedLocation?.locationName || "",
+      vesselId: selectedVessel?.vesselId || null,
+      vesselName: selectedVessel?.vesselName || "",
       imoCode: form.imoCode,
       vesselType: form.vesselType,
       lengthOverall: form.lengthOverall,
@@ -149,20 +131,35 @@ export default function TugServices() {
       serviceRemarks: form.serviceRemarks,
       remarks: form.remarks,
       isActive: form.isActive,
-      activities: activities
+      activities: activities,
+      serviceId: form.serviceId
     };
   };
 
   const handleSave = async () => {
     const payload = buildPayload();
-    try {
-      const response = await axiosInstance.post('/api/save', payload);
-      toast.success('Saved!');
-      console.log('Save response:', response?.data);
-    } catch (err) {
+    if(payload?.serviceId){
+    await tugService.updateService(payload?.serviceId,payload).then((res) => {
+      toast.success('Updated successfully');
+      console.log('Update response:', res?.data);
+      patchResponseData(res);
+    }, (error) => {
       console.error('Error saving:', err);
-      toast.error(`Save failed: ${err.response?.data?.message || err.message}`);
-    }
+      toast.error("Unable to save form");
+    });
+    }else{
+    await tugService.createService(payload).then((res) => {
+      const newId = res?.serviceId;
+      toast.success('Saved successfully');
+      navigate(`/tugservices/${newId}`);
+      patchResponseData(res);
+
+      console.log('Save response:', res?.data);
+    }, (error) => {
+      console.error('Error saving:', err);
+      toast.error("Unable to save form");
+    });
+  }
   };
 
   // Single method to handle all form field changes
@@ -173,7 +170,7 @@ export default function TugServices() {
 
   // Method to clear form and reset data
   const handleClearOrReset = () => {
-    if(form?.serviceId){
+    if (form?.serviceId) {
       setForm(defaultFormData);
       return;
     }
@@ -193,11 +190,8 @@ export default function TugServices() {
       remarks: "",
       isActive: 1,
     });
-    setRows(tugServiceTimeline);
-    // Refetch data
-    fetchLocations();
-    fetchVessels();
-    toast('Cleared and refreshed data!', { 
+    setActivities(defaultActivitiesList);
+    toast('Cleared and refreshed data!', {
       duration: 2000,
       icon: '⚠️',
       style: {
@@ -207,8 +201,28 @@ export default function TugServices() {
     });
   };
 
+  const handleSelectChange = (event) => {
+    const { name, value } = event.target;
+    if (name === 'locationId') {
+      const locationData = locations.find((v) => v.locationId === value);
+      setSelectedLocation({
+        locationId: locationData?.locationId,
+        locationName: locationData?.locationName,
+      })
+    } else {
+      const vesselData = vessels.find((v) => v.vesselId === value);
+      setSelectedVessel({
+        vesselId: vesselData.vesselId,
+        vesselName: vesselData.vesselName,
+      });
+    }
+
+  };
+
   return (
     <>
+    {/* The Loader will only be visible when the 'loading' state is true */}
+    <Loader show={loading} />
       <ToastContainer headerHeight={64} />
       <div className="min-h-screen flex flex-col bg-gray-50">
         <div className="container mx-auto px-4 pt-6">
@@ -220,34 +234,19 @@ export default function TugServices() {
               name="refNo"
               value={form.refNo}
               onChange={handleChange}
-              InputProps={{ disableUnderline: true }}
             />
             <TextField
               size="small"
               label="Date:"
               type="date"
-              InputLabelProps={{ shrink: true }}
               variant="standard"
               name="serviceDate"
               value={form.serviceDate}
               onChange={handleChange}
-              InputProps={{ disableUnderline: true }}
             />
           </div>
         </div>
         <div className="flex-1 container mx-auto px-4 py-6 space-y-6">
-          {/* Error Notification */}
-          {(error.vessels || error.locations) && (
-            <div className="bg-red-50 border-l-4 border-red-400 p-3 rounded-r-md">
-              <div className="flex items-center">
-                <FaExclamationCircle className="text-red-400 mr-2" style={{ fontSize: 20 }} />
-                <p className="text-sm text-red-700">
-                  Some data could not be loaded. Please check the fields marked with error icons.
-                </p>
-              </div>
-            </div>
-          )}
-          
           {/* Section 1 - Two Columns */}
           <Card>
             <CardContent>
@@ -255,50 +254,31 @@ export default function TugServices() {
                 {/* Left Column */}
                 <div className="space-y-3">
                   <div>
-                    <FormControl 
-                      fullWidth 
-                      size="small" 
+                    <FormControl
+                      fullWidth
+                      size="small"
                       variant="outlined"
-                      error={!!error.vessels}
                     >
                       <InputLabel id="vessel-label">
                         <div className="flex items-center gap-1">
                           Vessel Name
-                          {error.vessels && (
-                            <Tooltip title={error.vessels} arrow>
-                              <FaExclamationCircle className="text-red-500" style={{ fontSize: 16 }} />
-                            </Tooltip>
-                          )}
                         </div>
                       </InputLabel>
                       <Select
                         labelId="vessel-label"
                         label="Vessel Name"
                         name="vesselId"
-                        value={form.vesselId}
-                        onChange={handleChange}
-                        disabled={loading.vessels}
-                        renderValue={(selected) => {
-                          if (!selected) return "Select Vessel";
-                          const match = vessels.find((loc) => String(loc.vesselId) === String(selected));
-                          return match ? match.vesselName : selected;
-                        }}
+                        value={selectedVessel?.vesselId || ''}
+                        onChange={handleSelectChange}
                       >
-                        {loading.vessels ? (
-                          <MenuItem value="" disabled>
-                            <CircularProgress size={16} sx={{ mr: 1 }} />
-                            Loading vessels...
+                        <MenuItem value="">
+                          <em>None</em>
+                        </MenuItem>
+                        {vessels.map((item) => (
+                          <MenuItem key={item.vesselId} value={item.vesselId}>
+                            {item.vesselName}
                           </MenuItem>
-                        ) : (
-                          <>
-                            <MenuItem value="">Select Vessel</MenuItem>
-                            {vessels.map((vessel) => (
-                              <MenuItem key={vessel.id || vessel.vesselId} value={vessel.id || vessel.vesselId}>
-                                {vessel.name || vessel.vesselName || vessel.title}
-                              </MenuItem>
-                            ))}
-                          </>
-                        )}
+                        ))}
                       </Select>
                     </FormControl>
                   </div>
@@ -308,49 +288,32 @@ export default function TugServices() {
                 {/* Right Column */}
                 <div className="space-y-3">
                   <div>
-                    <FormControl 
-                      fullWidth 
-                      size="small" 
+                    <FormControl
+                      fullWidth
+                      size="small"
                       variant="outlined"
-                      error={!!error.locations}
                     >
                       <InputLabel id="location-label">
                         <div className="flex items-center gap-1">
                           Location
-                          {error.locations && (
-                            <Tooltip title={error.locations} arrow>
-                              <FaExclamationCircle className="text-red-500" style={{ fontSize: 16 }} />
-                            </Tooltip>
-                          )}
                         </div>
                       </InputLabel>
                       <Select
                         labelId="location-label"
                         label="Location"
                         name="locationId"
-                        value={form.locationId}
-                        onChange={handleChange}
-                        renderValue={(selected) => {
-                          if (!selected) return "Select Location";
-                          const match = locations.find((loc) => String(loc.locationId) === String(selected));
-                          return match ? match.locationName : selected;
-                        }}
+                        value={selectedLocation?.locationId || ''}
+                        onChange={handleSelectChange}
                       >
-                        {loading.locations ? (
-                          <MenuItem value="" disabled>
-                            <CircularProgress size={16} sx={{ mr: 1 }} />
-                            Loading locations...
+                        <MenuItem value="">
+                          <em>None</em>
+                        </MenuItem>
+                        {/* Map through the locations array to create the dropdown options */}
+                        {locations.map((item) => (
+                          <MenuItem key={item.locationId} value={item.locationId}>
+                            {item.locationName}
                           </MenuItem>
-                        ) : (
-                          <>
-                            <MenuItem value="">Select Location</MenuItem>
-                            {locations.map((location) => (
-                              <MenuItem key={location.locationId} value={location.locationId}>
-                                {location.locationName}
-                              </MenuItem>
-                            ))}
-                          </>
-                        )}
+                        ))}
                       </Select>
                     </FormControl>
                   </div>
@@ -374,7 +337,6 @@ export default function TugServices() {
           <Card>
             <CardContent className="space-y-3">
               <div className="grid grid-cols-3 gap-6">
-
                 <FormControl fullWidth size="small" variant="outlined" className="col-span-1">
                   <InputLabel id="typeOfService-label">Type of Service</InputLabel>
                   <Select
@@ -417,51 +379,51 @@ export default function TugServices() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {rows.map((row, index) => (
+                  {activities.map((row, index) => (
                     <TableRow key={index}>
-                    {/* Date field */}
-                    <TableCell style={{ width: 120 }}>
-                      <TextField
-                        type="date"
-                        size="small"
-                        variant="outlined"
-                        value={row.activityDate || ""}
-                        style={{ minWidth: 120 }}
-                        onChange={(e) => updateRow(index, "activityDate", e.target.value)}
-                      />
-                    </TableCell>
-                  
-                    {/* Time field */}
-                    <TableCell style={{ width: 100 }}>
-                      <TextField
-                        type="time"
-                        size="small"
-                        variant="outlined"
-                        value={row.activityTime || ""}
-                        style={{ minWidth: 100 }}
-                        onChange={(e) => updateRow(index, "activityTime", e.target.value)}
-                      />
-                    </TableCell>
-                  
-                    {/* Description */}
-                    <TableCell style={{ width: "70%" }}>
-                      <TextareaAutosize
-                        minRows={1}
-                        style={{
-                          width: "100%",
-                          fontSize: "0.875rem",
-                          padding: "8.5px 14px",
-                          borderRadius: 4,
-                          border: "1px solid #c4c4c4",
-                          resize: "vertical",
-                        }}
-                        placeholder="Enter description"
-                        value={row.description}
-                        onChange={(e) => updateRow(index, "description", e.target.value)}
-                      />
-                    </TableCell>
-                  </TableRow>
-                  
+                      {/* Date field */}
+                      <TableCell style={{ width: 120 }}>
+                        <TextField
+                          type="date"
+                          size="small"
+                          variant="outlined"
+                          value={row.activityDate || ""}
+                          style={{ minWidth: 120 }}
+                          onChange={(e) => updateRow(index, "activityDate", e.target.value)}
+                        />
+                      </TableCell>
+
+                      {/* Time field */}
+                      <TableCell style={{ width: 100 }}>
+                        <TextField
+                          type="time"
+                          size="small"
+                          variant="outlined"
+                          value={row.activityTime || ""}
+                          style={{ minWidth: 100 }}
+                          onChange={(e) => updateRow(index, "activityTime", e.target.value)}
+                        />
+                      </TableCell>
+
+                      {/* Description */}
+                      <TableCell style={{ width: "70%" }}>
+                        <TextareaAutosize
+                          minRows={1}
+                          style={{
+                            width: "100%",
+                            fontSize: "0.875rem",
+                            padding: "8.5px 14px",
+                            borderRadius: 4,
+                            border: "1px solid #c4c4c4",
+                            resize: "vertical",
+                          }}
+                          placeholder="Enter description"
+                          value={row.description}
+                          onChange={(e) => updateRow(index, "description", e.target.value)}
+                        />
+                      </TableCell>
+                    </TableRow>
+
                   ))}
                 </TableBody>
               </Table>

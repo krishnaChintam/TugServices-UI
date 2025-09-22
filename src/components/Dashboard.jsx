@@ -4,17 +4,21 @@ import { useNavigate } from "react-router-dom";
 import { Box, TextField, MenuItem, IconButton, InputAdornment } from "@mui/material";
 import DataTable from "./common/DataTable";
 import {tugService} from "../api/apiServices";
+import Loader from "@/components/Loader.jsx";
 
 const Dashboard = () => {
   const [search, setSearch] = useState("");
   const [data, setData] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [gridApi, setGridApi] = useState(null);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
       const response = await tugService.getAllServices();
+      setLoading(false);
       setData(response);
     };
     fetchData();
@@ -27,7 +31,6 @@ const onGridReady = (params) => {
   const onRowClicked = (props) =>{
     const data = props?.data;
     setSelectedItem(data);
-    console.log(data)
     if (data?.serviceId) {
       navigate(`/tugservices/${data?.serviceId}`);
     }
@@ -72,6 +75,9 @@ const onGridReady = (params) => {
   ]
   
   return (
+  <>
+   {/* The Loader will only be visible when the 'loading' state is true */}
+   <Loader show={loading} />
     <Box className="p-6">
     <Box className="flex justify-between items-center mb-4">
         <TextField
@@ -112,6 +118,7 @@ const onGridReady = (params) => {
         onGridReady={onGridReady}
       />
       </Box>
+      </>
   );
 };
 

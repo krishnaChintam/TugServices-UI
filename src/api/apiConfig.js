@@ -13,7 +13,7 @@ const ENV = {
 
 // Current environment (you can change this based on your needs)
 const CURRENT_ENV = ENV.DEVELOPMENT;
-const URL = 'http://localhost:8080';
+const URL = 'http://45.76.159.84:8080/services-0.0.1-SNAPSHOT';
 // Service URLs configuration
 export const SERVICE_URLS = {
   [ENV.DEVELOPMENT]: {
@@ -74,20 +74,18 @@ export const API_ENDPOINTS = {
   TUG_SERVICES: {
     GET_ALL_SERVICES: '/tug-services/all',
     GET_SERVICE_BY_ID: '/tug-services',
-    CREATE_SERVICE: '/tug-services/Create',
-    UPDATE_SERVICE: '/tug-services/Update',
-    DELETE_SERVICE: '/tug-services/Delete',
-    SEARCH_SERVICES: '/tug-services/Search',
-    GET_SERVICES_BY_CATEGORY: '/tug-services/GetByCategory',
-    GET_POPULAR_SERVICES: '/tug-services/GetPopular'
+    CREATE_SERVICE: '/tug-services/save',
+    UPDATE_SERVICE: '/tug-services/update',
+    DELETE_SERVICE: '/tug-services/delete',
+    SEARCH_SERVICES: '/tug-services/search',
   },
 
   // Locations endpoints
   LOCATIONS: {
     GET_ALL: '/locations/all',
-    GET_BY_ID: '/locations/GetById',
-    CREATE: '/locations/Create',
-    UPDATE: '/locations/Update',
+    GET_BY_ID: '/locations/getById',
+    CREATE: '/locations/create',
+    UPDATE: '/locations/update',
   },
 
   // Vessels endpoints
