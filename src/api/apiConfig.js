@@ -88,6 +88,14 @@ export const API_ENDPOINTS = {
     UPDATE: '/locations/update',
   },
 
+    // Locations endpoints
+    TYPE_OF_SERVICES: {
+      GET_ALL: '/service-types/getAll',
+      GET_BY_ID: '/service-types/getById',
+      CREATE: '/service-types/create',
+      UPDATE: '/service-types/update',
+    },
+
   // Vessels endpoints
   VESSELS: {
     GET_ALL: '/vessels/all',
@@ -182,7 +190,8 @@ export const {
   REVIEW,
   CATEGORY,
   DASHBOARD,
-  UPLOAD
+  UPLOAD,
+  TYPE_OF_SERVICES
 } = API_ENDPOINTS;
 
 // Helper functions for common API operations (from apiConstants.js)

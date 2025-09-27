@@ -1,5 +1,5 @@
 import React, { useState,useEffect } from "react";
-import { FaSearch, FaFilter, FaSort, FaEdit } from "react-icons/fa";
+import { FaEdit } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { Box, TextField, MenuItem, IconButton, InputAdornment } from "@mui/material";
 import DataTable from "./common/DataTable";
@@ -49,27 +49,24 @@ const onGridReady = (params) => {
     );
   };
 
-  const handleSearch=(value)=>{
-    console.log(value)
-    gridApi.setQuickFilter(value);
-  }
-
   // Quick stats data
   const columns = [
     { headerName: "Vessel Name", field: "vesselName", sortable: true, flex: 1 },
     { headerName: "Vessel Type", field: "vesselType", sortable: true, flex: 1 },
     { headerName: "Imo Code", field: "imoCode", sortable: true, flex: 1 },
     { headerName: "Service Type", field: "serviceType", sortable: true, flex: 1 },
-    { headerName: "Service Date", field: "serviceDate", sortable: true, flex: 1 },
-    { headerName: "Service Remarks", field: "serviceRemarks", sortable: true, flex: 1 },
-    { headerName: "Draught Aft", field: "draughtAft", sortable: true, flex: 1 },
-    { headerName: "Draught Forward", field: "draughtForward", sortable: true, flex: 1 },
-    { headerName: "Ref No", field: "refNo", sortable: true, flex: 1 },
+    // { headerName: "Service Date", field: "serviceDate", sortable: true, flex: 1 },
+    // { headerName: "Service Remarks", field: "serviceRemarks", sortable: true, flex: 1 },
+    // { headerName: "Ref No", field: "refNo", sortable: true, flex: 1 },
     { headerName: "Remarks", field: "remarks", sortable: true, flex: 1 },
     {
       headerName: "Actions",
       field: "actions",
       flex: 1,
+      pinned: "right", 
+      width: 100,          // fixed width
+      minWidth: 100,       // optional safeguard
+      maxWidth: 120,       // optional safeguard
       cellRenderer: ActionRenderer
     },
   ]
@@ -112,7 +109,7 @@ const onGridReady = (params) => {
       <DataTable
         rowData={data}
         sortable={true}
-        filter={false}
+        filter={true}
         columnDefs={columns}
         onGridReady={onGridReady}
       />

@@ -12,10 +12,10 @@ import { useState, useEffect } from 'react';
 const Sidebar = ({ sidebarOpen, toggleSidebar }) => {
   const navigate = useNavigate();
   const [username, setUsername] = useState('User');
+  const userData = JSON.parse(localStorage.getItem('userData'))
 
   useEffect(() => {
     try {
-      const userData = JSON.parse(localStorage.getItem('userData'));
       if (userData && userData.username) {
         setUsername(userData.username);
       }

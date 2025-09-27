@@ -14,10 +14,11 @@ import {
   TextareaAutosize,
   InputLabel,
   FormControl,
-  FormHelperText,
+  Autocomplete
 } from "@mui/material";
 import { useParams, useNavigate } from "react-router-dom";
-import { locationService, vesselService, tugService } from "../../api/apiServices.js";
+import { FaTrash } from "react-icons/fa";
+import { locationService, vesselService, tugService,typeOfService } from "../../api/apiServices.js";
 import { defaultActivitiesList } from './sampleData.js';
 import { toast } from '../../components/common/toster.jsx';
 import ToastContainer from '../../components/common/toster.jsx';
@@ -28,11 +29,14 @@ export default function TugServices() {
   const { id } = useParams();
   const [locations, setLocations] = useState([]);
   const [vessels, setVessels] = useState([]);
+  const [typeOfServicesList, setTypeOfServicesList] = useState([]);
   const [defaultFormData, setDefaultFormData] = useState(null);
   const [selectedVessel, setSelectedVessel] = useState("");
   const [selectedLocation, setSelectedLocation] = useState("");
+  const [selectedTypeOfService, setSelectedTypeOfService] = useState("");
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const userData = JSON.parse(localStorage.getItem('userData'))
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -54,6 +58,10 @@ export default function TugServices() {
     remarks: "",
     isActive: 1,
     serviceId: null,
+    editedBy: "",
+    editedDate: null,
+    createdBy: "",
+    createdDate: null,
   });
 
   const patchResponseData = (res) => {
@@ -68,6 +76,9 @@ export default function TugServices() {
       locationId: res?.locationId,
       locationName: res?.locationName,
     });
+    setSelectedTypeOfService({
+      serviceType: res?.serviceType
+    })
     setErrors({}); // Clear errors on successful data load
   };
 
@@ -89,12 +100,14 @@ export default function TugServices() {
   const fetchOnloadData = async () => {
     try {
       setLoading(true);
-      const [locationsData, vesselsData] = await Promise.all([
+      const [locationsData, vesselsData,typeOfServicesData] = await Promise.all([
         locationService.getAllLocations(),
         vesselService.getAllVessels(),
+        typeOfService.getAllTypeOfServices()
       ]);
       setLocations(locationsData || []);
       setVessels(vesselsData || []);
+      setTypeOfServicesList(typeOfServicesData || []);
       if (id) {
         await fetchSelectedData(id);
       }
@@ -111,6 +124,9 @@ export default function TugServices() {
   };
 
   const updateRow = (index, key, value) => {
+    if(key === "activityTime"){
+      value = `${value}:00`
+    }
     setActivities(prev => prev.map((r, i) => (i === index ? { ...r, [key]: value } : r)));
   };
 
@@ -133,6 +149,10 @@ export default function TugServices() {
       isActive: form.isActive,
       activities: activities,
       serviceId: form.serviceId,
+      editedBy:  form?.serviceId ? userData?.username : "",
+      editedDate: form?.serviceId ? new Date().toISOString() : null,
+      crecreatedBy: form?.serviceId ? form?.createdBy : userData?.username,
+      createdDate: form?.serviceId ? form?.createdDate : new Date().toISOString(),
     };
   };
 
@@ -148,8 +168,8 @@ export default function TugServices() {
       tempErrors.locationId = true;
       isValid = false;
     }
-    if (!selectedVessel?.vesselId) {
-      tempErrors.vesselId = true;
+    if (!selectedVessel?.vesselName) {
+      tempErrors.vesselName = true;
       isValid = false;
     }
 
@@ -158,12 +178,17 @@ export default function TugServices() {
   };
 
   const handleSave = async () => {
+    // if (!validateForm()) {
+    //   toast.error("Please fill in all mandatory fields.");
+    //   return;
+    // }
+
+    const payload = buildPayload();
+    console.log(payload)
     if (!validateForm()) {
       toast.error("Please fill in all mandatory fields.");
       return;
     }
-
-    const payload = buildPayload();
     setLoading(true);
 
     try {
@@ -203,6 +228,9 @@ export default function TugServices() {
         vesselId: defaultFormData?.vesselId,
         vesselName: defaultFormData?.vesselName,
       });
+      setSelectedTypeOfService({
+        serviceType: defaultFormData?.serviceType
+      })
     } else {
       setForm({
         refNo: "",
@@ -218,10 +246,15 @@ export default function TugServices() {
         serviceRemarks: "",
         remarks: "",
         isActive: 1,
+        editedBy:  "",
+        editedDate: null,
+        crecreatedBy: userData?.username,
+        createdDate: new Date().toISOString(),
       });
       setActivities(defaultActivitiesList);
       setSelectedLocation("");
       setSelectedVessel("");
+      setSelectedTypeOfService("")
     }
     setErrors({}); // Clear errors on reset
     toast('Cleared and refreshed data!', {
@@ -243,7 +276,7 @@ export default function TugServices() {
         locationName: locationData?.locationName,
       });
       setForm(prev => ({ ...prev, locationId: value })); // Update form state
-    } else {
+    } else if(name === 'vesselId'){
       const vesselData = vessels.find((v) => v.vesselId === value);
       setSelectedVessel({
         vesselId: vesselData.vesselId,
@@ -258,7 +291,49 @@ export default function TugServices() {
         lengthOverall: vesselData?.loa,
         draughtForward: vesselData?.dwt,
       });
+    }else{
+      const typeOfServiceData = typeOfServicesList.find((v) => v.serviceTypeName === value);
+      setSelectedTypeOfService({
+        serviceType: typeOfServiceData?.serviceTypeName,
+      });
+      setForm(prev => ({ ...prev, serviceType: value })); // Update form state
     }
+  };
+
+  const handleAutocompleteChange = (event, newValue) => {
+    // If a new value is typed and doesn't exist in the list
+    if (typeof newValue === 'string') {
+      const newVessel = {
+        vesselId: null, // A simple way to generate a unique ID
+        vesselName: newValue,
+      };
+      setVessels((prevVessels) => [...prevVessels, newVessel]);
+      setSelectedVessel(newVessel);
+    } else {
+      setSelectedVessel(newValue);
+    }
+  };
+
+  const renderOption = (props, option, { inputValue }) => {
+    // Add the "Add [input value]" option if no match is found
+    const isNew = !vessels.find((v) => v.vesselName === inputValue);
+    if (isNew && option.vesselName === inputValue) {
+      return (
+        <li {...props}>
+          Add "{inputValue}"
+        </li>
+      );
+    }
+    return (
+      <li {...props}>
+        {option.vesselName}
+      </li>
+    );
+  };
+
+  const deleteRow = (index) => {
+    const updated = activities.filter((_, i) => i !== index);
+    setActivities(updated);
   };
 
   return (
@@ -288,101 +363,140 @@ export default function TugServices() {
             />
           </div>
         </div>
-        <div className="flex-1 container mx-auto px-4 py-6 space-y-6">
+        <div className="flex-1 container mx-auto px-4 py-6 ">
           {/* Section 1 - Two Columns */}
           <Card>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="space-y-3">
-                  <FormControl
-                    fullWidth
-                    size="small"
-                    variant="outlined"
-                    error={errors.vesselId}
-                  >
-                    <InputLabel id="vessel-label">
-                      <div className="flex items-center gap-1">
-                        Vessel Name *
-                      </div>
-                    </InputLabel>
-                    <Select
-                      labelId="vessel-label"
+              {/* 1st Row - Vessel Name, Location, IMO No */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
+                {/* Vessel Name */}
+                <Autocomplete
+                  fullWidth
+                  size="small"
+                  value={selectedVessel}
+                  onChange={handleAutocompleteChange}
+                  options={vessels}
+                  getOptionLabel={(option) => option.vesselName || ""}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
                       label="Vessel Name *"
-                      name="vesselId"
-                      value={selectedVessel?.vesselId || ''}
-                      onChange={handleSelectChange}
-                    >
-                      <MenuItem value="">
-                        <em>None</em>
-                      </MenuItem>
-                      {vessels.map((item) => (
-                        <MenuItem key={item.vesselId} value={item.vesselId}>
-                          {item.vesselName}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                  <TextField size="small" fullWidth label="Length Overall (M)" name="lengthOverall" value={form.lengthOverall} onChange={handleChange} />
-                </div>
-                <div className="space-y-3">
-                  <FormControl
-                    fullWidth
-                    size="small"
-                    variant="outlined"
-                    error={errors.locationId}
+                      variant="outlined"
+                    />
+                  )}
+                  freeSolo
+                  selectOnFocus
+                  clearOnBlur
+                  handleHomeEndKeys
+                  renderOption={renderOption}
+                  filterOptions={(options, params) => {
+                    const filtered = options.filter((option) =>
+                      option.vesselName
+                        .toLowerCase()
+                        .includes(params.inputValue.toLowerCase())
+                    );
+                    if (params.inputValue !== "" && !filtered.length) {
+                      filtered.push({
+                        vesselId: null,
+                        vesselName: params.inputValue,
+                      });
+                    }
+                    return filtered;
+                  }}
+                />
+
+                {/* Location */}
+                <FormControl fullWidth size="small" variant="outlined" error={errors.locationId}>
+                  <InputLabel id="location-label">Location *</InputLabel>
+                  <Select
+                    labelId="location-label"
+                    label="Location *"
+                    name="locationId"
+                    value={selectedLocation?.locationId || ""}
+                    onChange={handleSelectChange}
                   >
-                    <InputLabel id="location-label">
-                      <div className="flex items-center gap-1">
-                        Location *
-                      </div>
-                    </InputLabel>
-                    <Select
-                      labelId="location-label"
-                      label="Location *"
-                      name="locationId"
-                      value={selectedLocation?.locationId || ''}
-                      onChange={handleSelectChange}
-                    >
-                      <MenuItem value="">
-                        <em>None</em>
+                    <MenuItem value="">
+                      <em>None</em>
+                    </MenuItem>
+                    {locations.map((item) => (
+                      <MenuItem key={item.locationId} value={item.locationId}>
+                        {item.locationName}
                       </MenuItem>
-                      {locations.map((item) => (
-                        <MenuItem key={item.locationId} value={item.locationId}>
-                          {item.locationName}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                  <div className="grid grid-cols-2 gap-3">
-                    <TextField size="small" fullWidth label="Draught Fwd (M)" name="draughtForward" value={form.draughtForward} onChange={handleChange} />
-                    <TextField size="small" fullWidth label="Draught Aft (M)" name="draughtAft" value={form.draughtAft} onChange={handleChange} />
-                  </div>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                {/* IMO No */}
+                <TextField
+                  size="small"
+                  fullWidth
+                  label="IMO No"
+                  name="imoCode"
+                  value={form.imoCode}
+                  onChange={handleChange}
+                />
+              </div>
+
+              {/* 2nd Row - Length, Draught Fwd & Aft, Vessel Type */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <TextField
+                  size="small"
+                  fullWidth
+                  label="Length Overall (M)"
+                  name="lengthOverall"
+                  value={form.lengthOverall}
+                  onChange={handleChange}
+                />
+
+                <div className="grid grid-cols-2 gap-3">
+                  <TextField
+                    size="small"
+                    fullWidth
+                    label="Draught Fwd (M)"
+                    name="draughtForward"
+                    value={form.draughtForward}
+                    onChange={handleChange}
+                  />
+                  <TextField
+                    size="small"
+                    fullWidth
+                    label="Draught Aft (M)"
+                    name="draughtAft"
+                    value={form.draughtAft}
+                    onChange={handleChange}
+                  />  
                 </div>
-                <div className="space-y-3">
-                  <TextField size="small" fullWidth label="IMO No" name="imoCode" value={form.imoCode} onChange={handleChange} />
-                  <TextField size="small" fullWidth label="Type of Vessel" name="vesselType" value={form.vesselType} onChange={handleChange} />
-                </div>
+
+                <TextField
+                  size="small"
+                  fullWidth
+                  label="Type of Vessel"
+                  name="vesselType"
+                  value={form.vesselType}
+                  onChange={handleChange}
+                />
               </div>
             </CardContent>
-          </Card>
-
-          {/* Section 2 */}
-          <Card>
+            {/* Section 2 */}
             <CardContent className="space-y-3">
               <div className="grid grid-cols-3 gap-6">
-                <FormControl fullWidth size="small" variant="outlined" className="col-span-1">
-                  <InputLabel id="typeOfService-label">Type of Service</InputLabel>
+              <FormControl fullWidth size="small" variant="outlined" error={errors.serviceTypeId}>
+                  <InputLabel id="typeOfService-label">Type of Service *</InputLabel>
                   <Select
                     labelId="typeOfService-label"
-                    label="Type of Service"
-                    name="serviceType"
-                    value={form.serviceType}
-                    onChange={handleChange}
+                    label="Type of Service *"
+                    name="serviceTypeId"
+                    value={selectedTypeOfService?.serviceType || ""}
+                    onChange={handleSelectChange}
                   >
-                    <MenuItem value="">Select Service</MenuItem>
-                    <MenuItem value="BERTHING">Berthing</MenuItem>
-                    <MenuItem value="UNBERTHING">Unberthing</MenuItem>
-                    <MenuItem value="SHIFTING">Shifting</MenuItem>
+                    <MenuItem value="">
+                      <em>None</em>
+                    </MenuItem>
+                    {typeOfServicesList?.map((item) => (
+                      <MenuItem key={item.serviceTypeId} value={item.serviceTypeName}>
+                        {item.serviceTypeName}
+                      </MenuItem>
+                    ))}
                   </Select>
                 </FormControl>
                 <TextField
@@ -398,78 +512,96 @@ export default function TugServices() {
                 />
               </div>
             </CardContent>
-          </Card>
 
-          {/* Section 3 */}
-          <Card>
-            <CardContent>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Date</TableCell>
-                    <TableCell>Time</TableCell>
-                    <TableCell>Description</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {activities.map((row, index) => (
-                    <TableRow key={index}>
-                      <TableCell style={{ width: 120 }}>
-                        <TextField
-                          type="date"
-                          size="small"
-                          variant="outlined"
-                          value={row.activityDate || ""}
-                          style={{ minWidth: 120 }}
-                          onChange={(e) => updateRow(index, "activityDate", e.target.value)}
-                        />
-                      </TableCell>
-                      <TableCell style={{ width: 100 }}>
-                        <TextField
-                          type="time"
-                          size="small"
-                          variant="outlined"
-                          value={row.activityTime || ""}
-                          style={{ minWidth: 100 }}
-                          onChange={(e) => updateRow(index, "activityTime", e.target.value)}
-                        />
-                      </TableCell>
-
-                      {/* Description */}
-                      <TableCell style={{ width: "70%" }}>
-                        <TextareaAutosize
-                          minRows={1}
-                          style={{
-                            width: "100%",
-                            fontSize: "0.875rem",
-                            padding: "8.5px 14px",
-                            borderRadius: 4,
-                            border: "1px solid #c4c4c4",
-                            resize: "vertical",
-                          }}
-                          placeholder="Enter description"
-                          value={row.description}
-                          onChange={(e) => updateRow(index, "description", e.target.value)}
-                        />
-                      </TableCell>
+            {/* Section 3 */}
+            <CardContent style={{ padding: "8px", display: "flex", flexDirection: "column", height: 300 }}>
+              {/* Scrollable Table */}
+              <div style={{ flex: 1, overflowY: "auto" }}>
+                <Table size="small" stickyHeader>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell style={{ width: 50 }}>S.No</TableCell>
+                      <TableCell style={{ width: 120 }}>Date</TableCell>
+                      <TableCell style={{ width: 100 }}>Time</TableCell>
+                      <TableCell style={{ width: "65%" }}>Description</TableCell>
+                      <TableCell style={{ width: 60, textAlign: "center" }}>Action</TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              <div className="mt-4">
-                <Button
-                  variant="outlined"
-                  size="small"
-                  onClick={addRow}
-                >
+                  </TableHead>
+
+                  <TableBody>
+                    {activities.map((row, index) => (
+                      <TableRow key={index} style={{ height: 48 }}>
+                        <TableCell>
+                          <span>{index + 1}</span>
+                        </TableCell>
+                        {/* Date */}
+                        <TableCell>
+                          <TextField
+                            type="date"
+                            size="small"
+                            variant="outlined"
+                            value={row.activityDate || ""}
+                            onChange={(e) => updateRow(index, "activityDate", e.target.value)}
+                            style={{ minWidth: 120 }}
+                          />
+                        </TableCell>
+
+                        {/* Time */}
+                        <TableCell>
+                          <TextField
+                            type="time"
+                            size="small"
+                            variant="outlined"
+                            value={row.activityTime || ""}
+                            onChange={(e) => updateRow(index, "activityTime", e.target.value)}
+                            style={{ minWidth: 100 }}
+                          />
+                        </TableCell>
+
+                        {/* Description */}
+                        <TableCell>
+                          <TextareaAutosize
+                            minRows={1}
+                            style={{
+                              width: "100%",
+                              fontSize: "0.875rem",
+                              padding: "6px 10px",
+                              borderRadius: 4,
+                              border: "1px solid #c4c4c4",
+                              resize: "vertical",
+                            }}
+                            placeholder="Enter description"
+                            value={row.description}
+                            onChange={(e) => updateRow(index, "description", e.target.value)}
+                          />
+                        </TableCell>
+
+                        {/* Delete Button */}
+                        <TableCell align="center">
+                          <Button
+                            variant="transperent"
+                            color="error"
+                            size="small"
+                            onClick={() => deleteRow(index)}
+                          >
+                            <FaTrash />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Fixed Add Row Button */}
+              <div style={{ paddingTop: "8px", borderTop: "1px solid #eee" }}>
+                <Button variant="outlined" size="small" onClick={addRow}>
                   Add New Row
                 </Button>
               </div>
             </CardContent>
-          </Card>
 
-          {/* Section 4 */}
-          <Card>
+            {/* Section 4 */}
             <CardContent>
               <label
                 style={{
@@ -500,6 +632,16 @@ export default function TugServices() {
             </CardContent>
           </Card>
           <div className="mt-4 flex gap-2 justify-center">
+            {form?.serviceId && (
+              <Button
+                variant="contained"
+                size="small"
+                color="primary"
+                onClick={handleSave}
+              >
+                Create New Form
+              </Button>
+            )}
             <Button
               variant="outlined"
               size="small"

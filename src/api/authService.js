@@ -31,42 +31,43 @@ export const authService = {
       const response = await axiosInstance.post(AUTH.LOGIN, credentials);
       
       // Check if the response is successful (status 200)
-      if (response.status === 200) {
+      if (response?.status === 200 && response?.data?.id) {
         // Handle different response structures
-        if (typeof response.data === 'string' && response.data === 'Login successful!') {
+        // if (typeof response.data === 'string' && response.data === 'Login successful!') {
           // Simple string response indicating success
           return {
             success: true,
-            message: response.data,
+            message: null,
             token: null, // No token provided in this response structure
-            userData: null // No user data provided in this response structure
+            userData: response.data
           };
-        } else if (response.data && typeof response.data === 'object') {
+        // } 
+        // else if (response.data && typeof response.data === 'object') {
           // Object response structure
-          if (response.data.status !== 200) {
-            throw new Error(response.data.errors?.[0] || 'Invalid credentials');
-          }
+        //   if (response.data.status !== 200) {
+        //     throw new Error(response.data.errors?.[0] || 'Invalid credentials');
+        //   }
           
-          // Save token for authentication
-          if (response.data.data?.token) {
-            tokenService.setToken(response.data.data.token);
-          }
+        //   // Save token for authentication
+        //   if (response.data.data?.token) {
+        //     tokenService.setToken(response.data.data.token);
+        //   }
           
-          // Save user data
-          if (response.data.data?.user) {
-            localStorage.setItem(USER_DATA_KEY, JSON.stringify(response.data.data.user));
-          }
+        //   // Save user data
+        //   if (response.data.data?.user) {
+        //     localStorage.setItem(USER_DATA_KEY, JSON.stringify(response.data.data.user));
+        //   }
           
-          return {
-            success: true,
-            token: response.data.data?.token,
-            userData: response.data.data?.user,
-            message: response.data.message || 'Login successful'
-          };
-        } else {
-          // Unexpected response structure
-          throw new Error('Unexpected response format from server');
-        }
+        //   return {
+        //     success: true,
+        //     token: response.data.data?.token,
+        //     userData: response.data.data?.user,
+        //     message: response.data.message || 'Login successful'
+        //   };
+        // } else {
+        //   // Unexpected response structure
+        //   throw new Error('Unexpected response format from server');
+        // }
       } else {
         throw new Error('Login failed with status: ' + response.status);
       }
@@ -81,8 +82,9 @@ export const authService = {
   },
 
   logout: () => {
+    localStorage.clear();
     // Clear all authentication data
-    tokenService.clearToken();    
+    // tokenService.clearToken();    
     // Optionally, you could make a logout API call here if needed
     // return axiosInstance.post(AUTH.LOGOUT);
   },

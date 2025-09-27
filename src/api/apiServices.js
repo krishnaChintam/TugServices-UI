@@ -4,7 +4,7 @@
  */
 
 import axiosInstance from './axiosConfig.js';
-import { TUG_SERVICES, LOCATIONS, VESSELS, LISTING, BOOKING, USER } from './apiConfig.js';
+import { TUG_SERVICES, LOCATIONS, VESSELS, LISTING, TYPE_OF_SERVICES } from './apiConfig.js';
 
 // Tug Services API
 export const tugService = {
@@ -91,6 +91,17 @@ export const locationService = {
       throw new Error(`Failed to create location: ${error.message}`);
     }
   }
+};
+
+export const typeOfService = {
+  getAllTypeOfServices: async () => {
+    try {
+      const response = await axiosInstance.get(TYPE_OF_SERVICES.GET_ALL);
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to fetch typeOfServices: ${error.message}`);
+    }
+  },
 };
 
 // Vessels API

@@ -11,6 +11,7 @@ import logo from '../assets/images/logo.png';
   
 const Header = ({ toggleSidebar }) => {
   const navigate = useNavigate();
+  const userData = JSON.parse(localStorage.getItem('userData'))
   return (
     <div className="flex items-center justify-between w-full px-4 py-2 bg-white shadow-sm border-b">
       {/* Left Side - Menu and Title */}
@@ -21,6 +22,7 @@ const Header = ({ toggleSidebar }) => {
         />
         <div className="flex items-center space-x-2 cursor-pointer" onClick={() => navigate("/dashboard")}>
           <img src={logo} alt="Logo" className="h-8 w-auto" />
+          <span>{userData?.tugName}</span>
         </div>
       </div>
   
