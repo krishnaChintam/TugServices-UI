@@ -120,6 +120,19 @@ export default function TugServices() {
   };
 
   const addRow = () => {
+    // Returns true if at least one activity has an empty or null date/time, otherwise false
+    const hasInvalid = activities.some(item => !item?.activityDate || !item?.activityTime);
+    if(hasInvalid) {
+      toast("Can't proceed: Incomplete activity details found.",{
+        duration: 4000,
+        icon: '⚠️',
+        style: {
+          background: '#ff9800',
+          color: '#fff',
+        }
+      })
+      return;
+    }
     setActivities([...activities, { activityId: null, activityDate: "", activityTime: '', description: '' }]);
   };
 
@@ -151,7 +164,7 @@ export default function TugServices() {
       serviceId: form.serviceId,
       editedBy:  form?.serviceId ? userData?.username : "",
       editedDate: form?.serviceId ? new Date().toISOString() : null,
-      crecreatedBy: form?.serviceId ? form?.createdBy : userData?.username,
+      createdBy: form?.serviceId ? form?.createdBy : userData?.username,
       createdDate: form?.serviceId ? form?.createdDate : new Date().toISOString(),
     };
   };
@@ -248,7 +261,7 @@ export default function TugServices() {
         isActive: 1,
         editedBy:  "",
         editedDate: null,
-        crecreatedBy: userData?.username,
+        createdBy: userData?.username,
         createdDate: new Date().toISOString(),
       });
       setActivities(defaultActivitiesList);
@@ -593,12 +606,16 @@ export default function TugServices() {
                 </Table>
               </div>
 
-              {/* Fixed Add Row Button */}
               <div style={{ paddingTop: "8px", borderTop: "1px solid #eee" }}>
-                <Button variant="outlined" size="small" onClick={addRow}>
-                  Add New Row
-                </Button>
-              </div>
+                <div class="flex justify-between items-center">
+                    <Button variant="outlined" size="small" onClick={addRow}>
+                        Add New Row
+                    </Button>
+                    <div>
+                    Total: {activities?.length.toString().padStart(2, '0')}
+                    </div>
+                </div>
+            </div>
             </CardContent>
 
             {/* Section 4 */}
