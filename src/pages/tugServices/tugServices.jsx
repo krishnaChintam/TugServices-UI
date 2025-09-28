@@ -229,6 +229,37 @@ export default function TugServices() {
     setForm(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleClearOrNewForm = () =>{
+    navigate('/tugservices/');
+    setForm({
+      refNo: "",
+      serviceDate: new Date().toISOString().slice(0, 10),
+      locationId: "",
+      vesselId: "",
+      imoCode: "",
+      vesselType: "",
+      lengthOverall: "",
+      draughtForward: "",
+      draughtAft: "",
+      serviceType: "",
+      serviceRemarks: "",
+      remarks: "",
+      isActive: 1,
+      editedBy:  "",
+      editedDate: null,
+      createdBy: userData?.username,
+      createdDate: new Date().toISOString(),
+      serviceId: null,
+      locationName: "",
+      vesselName: "",
+    });
+    setActivities(defaultActivitiesList);
+    setSelectedLocation("");
+    setSelectedVessel("");
+    setSelectedTypeOfService("");
+    toast.success("Form cleared. Ready for new entry!")
+  }
+
   const handleClearOrReset = () => {
     if (form?.serviceId) {
       setForm(defaultFormData);
@@ -244,40 +275,11 @@ export default function TugServices() {
       setSelectedTypeOfService({
         serviceType: defaultFormData?.serviceType
       })
-    } else {
-      setForm({
-        refNo: "",
-        serviceDate: new Date().toISOString().slice(0, 10),
-        locationId: "",
-        vesselId: "",
-        imoCode: "",
-        vesselType: "",
-        lengthOverall: "",
-        draughtForward: "",
-        draughtAft: "",
-        serviceType: "",
-        serviceRemarks: "",
-        remarks: "",
-        isActive: 1,
-        editedBy:  "",
-        editedDate: null,
-        createdBy: userData?.username,
-        createdDate: new Date().toISOString(),
-      });
-      setActivities(defaultActivitiesList);
-      setSelectedLocation("");
-      setSelectedVessel("");
-      setSelectedTypeOfService("")
+      toast.success("Changes reverted. Initial data restored successfully!")
+      setErrors({}); // Clear errors on reset
+    }else{
+      handleClearOrNewForm()
     }
-    setErrors({}); // Clear errors on reset
-    toast('Cleared and refreshed data!', {
-      duration: 2000,
-      icon: '⚠️',
-      style: {
-        background: '#ff9800',
-        color: '#fff',
-      }
-    });
   };
 
   const handleSelectChange = (event) => {
@@ -654,7 +656,7 @@ export default function TugServices() {
                 variant="contained"
                 size="small"
                 color="primary"
-                onClick={handleSave}
+                onClick={handleClearOrNewForm}
               >
                 Create New Form
               </Button>
