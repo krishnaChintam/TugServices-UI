@@ -1,136 +1,5 @@
-// import React from "react";
-// import {
-//   TextField,
-//   Button,
-//   Select,
-//   MenuItem,
-//   Typography,
-//   Paper,
-// } from "@mui/material";
-
-// export default function TugServices() {
-//   return (
-//     <div className="min-h-screen flex flex-col bg-gray-50 text-gray-900">
-//       {/* HEADER */}
-//       <header className="flex items-center justify-between px-6 py-3 bg-white shadow">
-//         <img
-//           src="/logo192.png"
-//           alt="Company Logo"
-//           className="h-10 cursor-pointer"
-//           onClick={() => window.location.href = "/"}
-//         />
-//         <Button variant="outlined" color="error">
-//           Logout
-//         </Button>
-//       </header>
-
-//       {/* BODY */}
-//       <main className="flex-1 p-6 space-y-8 max-w-6xl mx-auto w-full">
-//         {/* Section 1: Vessel Info */}
-//         <Paper className="p-6">
-//           <Typography variant="h6" className="mb-4 font-semibold">
-//             Vessel Information
-//           </Typography>
-//           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-//             {/* Left Column */}
-//             <div className="space-y-4">
-//               <TextField label="Vessel Name" select fullWidth size="small">
-//                 <MenuItem value="">Select...</MenuItem>
-//                 <MenuItem value="1">Vessel One</MenuItem>
-//               </TextField>
-//               <TextField label="Length Overall (M)" fullWidth size="small" />
-//               <TextField label="Draught (M)" fullWidth size="small" />
-//             </div>
-
-//             {/* Right Column */}
-//             <div className="space-y-4">
-//               <TextField label="Location" select fullWidth size="small">
-//                 <MenuItem value="">Select...</MenuItem>
-//                 <MenuItem value="SG">Singapore</MenuItem>
-//               </TextField>
-//               <TextField label="IMO No" fullWidth size="small" />
-//               <TextField label="Type of Vessel" fullWidth size="small" />
-//             </div>
-//           </div>
-//         </Paper>
-
-//         {/* Section 2: Service */}
-//         <Paper className="p-6 space-y-4">
-//           <Typography variant="h6" className="font-semibold">
-//             Service Information
-//           </Typography>
-//           <TextField label="Type of Service" select fullWidth size="small">
-//             <MenuItem value="">Select...</MenuItem>
-//           </TextField>
-//           <TextField
-//             label="Service Remarks"
-//             fullWidth
-//             multiline
-//             rows={3}
-//             size="small"
-//           />
-//         </Paper>
-
-//         {/* Section 3: Data Table */}
-//         <Paper className="p-6 space-y-4">
-//           <Typography variant="h6" className="font-semibold">
-//             Service Records
-//           </Typography>
-//           <table className="min-w-full border text-sm">
-//             <thead className="bg-gray-100">
-//               <tr>
-//                 <th className="px-4 py-2 border">Date</th>
-//                 <th className="px-4 py-2 border">Time</th>
-//                 <th className="px-4 py-2 border">Description</th>
-//               </tr>
-//             </thead>
-//             <tbody>
-//               {/* Example row */}
-//               <tr>
-//                 <td className="border px-4 py-2">2025-08-17</td>
-//                 <td className="border px-4 py-2">10:30</td>
-//                 <td className="border px-4 py-2">Sample description</td>
-//               </tr>
-//             </tbody>
-//           </table>
-//           <Button variant="outlined" size="small">
-//             Add New Row
-//           </Button>
-//         </Paper>
-
-//         {/* Section 4: Remarks */}
-//         <Paper className="p-6">
-//           <Typography variant="h6" className="mb-4 font-semibold">
-//             Remarks
-//           </Typography>
-//           <TextField
-//             label="Remarks"
-//             fullWidth
-//             multiline
-//             rows={5}
-//             size="small"
-//           />
-//         </Paper>
-//       </main>
-
-//       {/* FOOTER */}
-//       <footer className="flex justify-center gap-4 py-4 border-t bg-white">
-//         <Button variant="contained" color="primary">
-//           Save
-//         </Button>
-//         <Button variant="outlined" color="secondary">
-//           Clear
-//         </Button>
-//         <Button variant="outlined">Print</Button>
-//       </footer>
-//     </div>
-//   );
-// }
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
-  AppBar,
-  Toolbar,
   Button,
   TextField,
   Select,
@@ -142,165 +11,683 @@ import {
   TableRow,
   TableCell,
   TableBody,
-  IconButton,
+  TextareaAutosize,
+  InputLabel,
+  FormControl,
+  Autocomplete
 } from "@mui/material";
-// import AddIcon from "@mui/icons-material/Add";
+import { useParams, useNavigate } from "react-router-dom";
+import { FaTrash } from "react-icons/fa";
+import { locationService, vesselService, tugService,typeOfService } from "../../api/apiServices.js";
+import { defaultActivitiesList } from './sampleData.js';
+import { toast } from '../../components/common/toster.jsx';
+import ToastContainer from '../../components/common/toster.jsx';
+import Loader from "@/components/Loader.jsx";
 
 export default function TugServices() {
-  const [rows, setRows] = useState([{ date: "", time: "", description: "" }]);
+  const [activities, setActivities] = useState(defaultActivitiesList);
+  const { id } = useParams();
+  const [locations, setLocations] = useState([]);
+  const [vessels, setVessels] = useState([]);
+  const [typeOfServicesList, setTypeOfServicesList] = useState([]);
+  const [defaultFormData, setDefaultFormData] = useState(null);
+  const [selectedVessel, setSelectedVessel] = useState("");
+  const [selectedLocation, setSelectedLocation] = useState("");
+  const [selectedTypeOfService, setSelectedTypeOfService] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+  const userData = JSON.parse(localStorage.getItem('userData'))
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    fetchOnloadData();
+  }, [id]);
+
+  const [form, setForm] = useState({
+    refNo: "",
+    serviceDate: new Date().toISOString().slice(0, 10),
+    locationId: "",
+    vesselId: "",
+    imoCode: "",
+    vesselType: "",
+    lengthOverall: "",
+    draughtForward: "",
+    draughtAft: "",
+    serviceType: "",
+    serviceRemarks: "",
+    remarks: "",
+    isActive: 1,
+    serviceId: null,
+    editedBy: "",
+    editedDate: null,
+    createdBy: "",
+    createdDate: null,
+  });
+
+  const patchResponseData = (res) => {
+    setForm(res);
+    setDefaultFormData(res);
+    setActivities(res?.activities);
+    setSelectedVessel({
+      vesselId: res?.vesselId,
+      vesselName: res?.vesselName,
+    });
+    setSelectedLocation({
+      locationId: res?.locationId,
+      locationName: res?.locationName,
+    });
+    setSelectedTypeOfService({
+      serviceType: res?.serviceType
+    })
+    setErrors({}); // Clear errors on successful data load
+  };
+
+  const fetchSelectedData = async (id) => {
+    setLoading(true);
+    try {
+      const res = await tugService.getServiceById(id);
+      if (res?.serviceId) {
+        patchResponseData(res);
+      }
+    } catch (error) {
+      console.error('Error fetching service:', error);
+      toast.error("Unable to fetch service details.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchOnloadData = async () => {
+    try {
+      setLoading(true);
+      const [locationsData, vesselsData,typeOfServicesData] = await Promise.all([
+        locationService.getAllLocations(),
+        vesselService.getAllVessels(),
+        typeOfService.getAllTypeOfServices()
+      ]);
+      setLocations(locationsData || []);
+      setVessels(vesselsData || []);
+      setTypeOfServicesList(typeOfServicesData || []);
+      if (id) {
+        await fetchSelectedData(id);
+      }
+    } catch (error) {
+      console.error('Error in fetchOnloadData:', error);
+      toast.error("Failed to load master data.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const addRow = () => {
-    setRows([...rows, { date: "", time: "", description: "" }]);
+    // Returns true if at least one activity has an empty or null date/time, otherwise false
+    const hasInvalid = activities.some(item => !item?.activityDate || !item?.activityTime);
+    if(hasInvalid) {
+      toast("Can't proceed: Incomplete activity details found.",{
+        duration: 4000,
+        icon: '⚠️',
+        style: {
+          background: '#ff9800',
+          color: '#fff',
+        }
+      })
+      return;
+    }
+    setActivities([...activities, { activityId: null, activityDate: "", activityTime: '', description: '' }]);
+  };
+
+  const updateRow = (index, key, value) => {
+    if(key === "activityTime"){
+      value = `${value}:00`
+    }
+    setActivities(prev => prev.map((r, i) => (i === index ? { ...r, [key]: value } : r)));
+  };
+
+  const buildPayload = () => {
+    return {
+      refNo: form.refNo,
+      serviceDate: form.serviceDate,
+      locationId: selectedLocation?.locationId || null,
+      locationName: selectedLocation?.locationName || "",
+      vesselId: selectedVessel?.vesselId || null,
+      vesselName: selectedVessel?.vesselName || "",
+      imoCode: form.imoCode,
+      vesselType: form.vesselType,
+      lengthOverall: form.lengthOverall,
+      draughtForward: form.draughtForward,
+      draughtAft: form.draughtAft,
+      serviceType: form.serviceType,
+      serviceRemarks: form.serviceRemarks,
+      remarks: form.remarks,
+      isActive: form.isActive,
+      activities: activities,
+      serviceId: form.serviceId,
+      editedBy:  form?.serviceId ? userData?.username : "",
+      editedDate: form?.serviceId ? new Date().toISOString() : null,
+      createdBy: form?.serviceId ? form?.createdBy : userData?.username,
+      createdDate: form?.serviceId ? form?.createdDate : new Date().toISOString(),
+    };
+  };
+
+  const validateForm = () => {
+    let tempErrors = {};
+    let isValid = true;
+
+    if (!form.refNo) {
+      tempErrors.refNo = true;
+      isValid = false;
+    }
+    if (!selectedLocation?.locationId) {
+      tempErrors.locationId = true;
+      isValid = false;
+    }
+    if (!selectedVessel?.vesselName) {
+      tempErrors.vesselName = true;
+      isValid = false;
+    }
+
+    setErrors(tempErrors);
+    return isValid;
+  };
+
+  const handleSave = async () => {
+    // if (!validateForm()) {
+    //   toast.error("Please fill in all mandatory fields.");
+    //   return;
+    // }
+
+    const payload = buildPayload();
+    console.log(payload)
+    if (!validateForm()) {
+      toast.error("Please fill in all mandatory fields.");
+      return;
+    }
+    setLoading(true);
+
+    try {
+      if (payload?.serviceId) {
+        const res = await tugService.updateService(payload.serviceId, payload);
+        toast.success('Updated successfully');
+        patchResponseData(res);
+      } else {
+        const res = await tugService.createService(payload);
+        const newId = res?.serviceId;
+        toast.success('Saved successfully', { duration: 2000 });
+        navigate(`/tugservices/${newId}`);
+        patchResponseData(res);
+      }
+    } catch (err) {
+      console.error('Error saving:', err);
+      toast.error("Unable to save form");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleClearOrNewForm = () =>{
+    navigate('/tugservices/');
+    setForm({
+      refNo: "",
+      serviceDate: new Date().toISOString().slice(0, 10),
+      locationId: "",
+      vesselId: "",
+      imoCode: "",
+      vesselType: "",
+      lengthOverall: "",
+      draughtForward: "",
+      draughtAft: "",
+      serviceType: "",
+      serviceRemarks: "",
+      remarks: "",
+      isActive: 1,
+      editedBy:  "",
+      editedDate: null,
+      createdBy: userData?.username,
+      createdDate: new Date().toISOString(),
+      serviceId: null,
+      locationName: "",
+      vesselName: "",
+    });
+    setActivities(defaultActivitiesList);
+    setSelectedLocation("");
+    setSelectedVessel("");
+    setSelectedTypeOfService("");
+    toast.success("Form cleared. Ready for new entry!")
+  }
+
+  const handleClearOrReset = () => {
+    if (form?.serviceId) {
+      setForm(defaultFormData);
+      setActivities(defaultFormData?.activities || defaultActivitiesList);
+      setSelectedLocation({
+        locationId: defaultFormData?.locationId,
+        locationName: defaultFormData?.locationName,
+      });
+      setSelectedVessel({
+        vesselId: defaultFormData?.vesselId,
+        vesselName: defaultFormData?.vesselName,
+      });
+      setSelectedTypeOfService({
+        serviceType: defaultFormData?.serviceType
+      })
+      toast.success("Changes reverted. Initial data restored successfully!")
+      setErrors({}); // Clear errors on reset
+    }else{
+      handleClearOrNewForm()
+    }
+  };
+
+  const handleSelectChange = (event) => {
+    const { name, value } = event.target;
+    if (name === 'locationId') {
+      const locationData = locations.find((v) => v.locationId === value);
+      setSelectedLocation({
+        locationId: locationData?.locationId,
+        locationName: locationData?.locationName,
+      });
+      setForm(prev => ({ ...prev, locationId: value })); // Update form state
+    } else if(name === 'vesselId'){
+      const vesselData = vessels.find((v) => v.vesselId === value);
+      setSelectedVessel({
+        vesselId: vesselData.vesselId,
+        vesselName: vesselData.vesselName,
+      });
+      setForm({
+        ...form,
+        vesselId: vesselData?.vesselId, // Update form state
+        imoCode: vesselData?.imoCode,
+        vesselType: vesselData?.vesselType,
+        draughtAft: vesselData?.arrDraft,
+        lengthOverall: vesselData?.loa,
+        draughtForward: vesselData?.dwt,
+      });
+    }else{
+      const typeOfServiceData = typeOfServicesList.find((v) => v.serviceTypeName === value);
+      setSelectedTypeOfService({
+        serviceType: typeOfServiceData?.serviceTypeName,
+      });
+      setForm(prev => ({ ...prev, serviceType: value })); // Update form state
+    }
+  };
+
+  const handleAutocompleteChange = (event, newValue) => {
+    // If a new value is typed and doesn't exist in the list
+    if (typeof newValue === 'string') {
+      const newVessel = {
+        vesselId: null, // A simple way to generate a unique ID
+        vesselName: newValue,
+      };
+      setVessels((prevVessels) => [...prevVessels, newVessel]);
+      setSelectedVessel(newVessel);
+    } else {
+      setSelectedVessel(newValue);
+    }
+  };
+
+  const renderOption = (props, option, { inputValue }) => {
+    // Add the "Add [input value]" option if no match is found
+    const isNew = !vessels.find((v) => v.vesselName === inputValue);
+    if (isNew && option.vesselName === inputValue) {
+      return (
+        <li {...props}>
+          Add "{inputValue}"
+        </li>
+      );
+    }
+    return (
+      <li {...props}>
+        {option.vesselName}
+      </li>
+    );
+  };
+
+  const deleteRow = (index) => {
+    const updated = activities.filter((_, i) => i !== index);
+    setActivities(updated);
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      {/* Header
-      <AppBar position="static" color="default" elevation={1}>
-        <Toolbar className="flex justify-between">
-          <img
-            src="/logo.png"
-            alt="Company Logo"
-            className="h-10 cursor-pointer"
-            onClick={() => (window.location.href = "/")}
-          />
-          <Button variant="outlined" color="error" size="small">
-            Logout
-          </Button>
-        </Toolbar>
-      </AppBar> */}
-
-      {/* Body */}
-      <div className="flex-1 container mx-auto px-4 py-6 space-y-6">
-        {/* Section 1 - Two Columns */}
-        <Card>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Left Column */}
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Vessel Name
-                  </label>
-                  <Select size="small" fullWidth defaultValue="">
-                    <MenuItem value="">Select Vessel</MenuItem>
-                    <MenuItem value="1">Vessel 1</MenuItem>
-                  </Select>
-                </div>
-                <TextField size="small" fullWidth label="Length Overall (M)" />
-                <TextField size="small" fullWidth label="Draught (M)" />
-              </div>
-
-              {/* Right Column */}
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Location
-                  </label>
-                  <Select size="small" fullWidth defaultValue="">
-                    <MenuItem value="">Select Location</MenuItem>
-                    <MenuItem value="1">Location 1</MenuItem>
-                  </Select>
-                </div>
-                <TextField size="small" fullWidth label="IMO No" />
-                <TextField size="small" fullWidth label="Type of Vessel" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Section 2 */}
-        <Card>
-          <CardContent className="space-y-3">
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Type of Service
-              </label>
-              <Select size="small" fullWidth defaultValue="">
-                <MenuItem value="">Select Service</MenuItem>
-                <MenuItem value="1">Service 1</MenuItem>
-              </Select>
-            </div>
+    <>
+      <Loader show={loading} />
+      <ToastContainer headerHeight={64} />
+      <div className="min-h-screen flex flex-col bg-gray-50">
+        <div className="container mx-auto px-4 pt-6">
+          <div className="flex flex-row gap-4 items-center">
             <TextField
               size="small"
-              fullWidth
-              label="Service Remarks"
-              multiline
-              rows={3}
+              label="Ref Num: *"
+              variant="standard"
+              name="refNo"
+              value={form.refNo}
+              onChange={handleChange}
+              error={errors.refNo}
             />
-          </CardContent>
-        </Card>
+            <TextField
+              size="small"
+              label="Date:"
+              type="date"
+              variant="standard"
+              name="serviceDate"
+              value={form.serviceDate}
+              onChange={handleChange}
+            />
+          </div>
+        </div>
+        <div className="flex-1 container mx-auto px-4 py-6 ">
+          {/* Section 1 - Two Columns */}
+          <Card>
+            <CardContent>
+              {/* 1st Row - Vessel Name, Location, IMO No */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
+                {/* Vessel Name */}
+                <Autocomplete
+                  fullWidth
+                  size="small"
+                  value={selectedVessel}
+                  onChange={handleAutocompleteChange}
+                  options={vessels}
+                  getOptionLabel={(option) => option.vesselName || ""}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Vessel Name *"
+                      variant="outlined"
+                    />
+                  )}
+                  freeSolo
+                  selectOnFocus
+                  clearOnBlur
+                  handleHomeEndKeys
+                  renderOption={renderOption}
+                  filterOptions={(options, params) => {
+                    const filtered = options.filter((option) =>
+                      option.vesselName
+                        .toLowerCase()
+                        .includes(params.inputValue.toLowerCase())
+                    );
+                    if (params.inputValue !== "" && !filtered.length) {
+                      filtered.push({
+                        vesselId: null,
+                        vesselName: params.inputValue,
+                      });
+                    }
+                    return filtered;
+                  }}
+                />
 
-        {/* Section 3 */}
-        <Card>
-          <CardContent>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Date</TableCell>
-                  <TableCell>Time</TableCell>
-                  <TableCell>Description</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {rows.map((row, index) => (
-                  <TableRow key={index}>
-                    <TableCell>
-                      <TextField
-                        type="date"
-                        size="small"
-                        fullWidth
-                        variant="outlined"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <TextField
-                        type="time"
-                        size="small"
-                        fullWidth
-                        variant="outlined"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <TextField
-                        size="small"
-                        fullWidth
-                        variant="outlined"
-                        placeholder="Enter description"
-                      />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                {/* Location */}
+                <FormControl fullWidth size="small" variant="outlined" error={errors.locationId}>
+                  <InputLabel id="location-label">Location *</InputLabel>
+                  <Select
+                    labelId="location-label"
+                    label="Location *"
+                    name="locationId"
+                    value={selectedLocation?.locationId || ""}
+                    onChange={handleSelectChange}
+                  >
+                    <MenuItem value="">
+                      <em>None</em>
+                    </MenuItem>
+                    {locations.map((item) => (
+                      <MenuItem key={item.locationId} value={item.locationId}>
+                        {item.locationName}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
 
-            <div className="mt-4">
-              <Button
-                // startIcon={<AddIcon />}
-                variant="outlined"
-                size="small"
-                onClick={addRow}
+                {/* IMO No */}
+                <TextField
+                  size="small"
+                  fullWidth
+                  label="IMO No"
+                  name="imoCode"
+                  value={form.imoCode}
+                  onChange={handleChange}
+                />
+              </div>
+
+              {/* 2nd Row - Length, Draught Fwd & Aft, Vessel Type */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <TextField
+                  size="small"
+                  fullWidth
+                  label="Length Overall (M)"
+                  name="lengthOverall"
+                  value={form.lengthOverall}
+                  onChange={handleChange}
+                />
+
+                <div className="grid grid-cols-2 gap-3">
+                  <TextField
+                    size="small"
+                    fullWidth
+                    label="Draught Fwd (M)"
+                    name="draughtForward"
+                    value={form.draughtForward}
+                    onChange={handleChange}
+                  />
+                  <TextField
+                    size="small"
+                    fullWidth
+                    label="Draught Aft (M)"
+                    name="draughtAft"
+                    value={form.draughtAft}
+                    onChange={handleChange}
+                  />  
+                </div>
+
+                <TextField
+                  size="small"
+                  fullWidth
+                  label="Type of Vessel"
+                  name="vesselType"
+                  value={form.vesselType}
+                  onChange={handleChange}
+                />
+              </div>
+            </CardContent>
+            {/* Section 2 */}
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-3 gap-6">
+              <FormControl fullWidth size="small" variant="outlined" error={errors.serviceTypeId}>
+                  <InputLabel id="typeOfService-label">Type of Service *</InputLabel>
+                  <Select
+                    labelId="typeOfService-label"
+                    label="Type of Service *"
+                    name="serviceTypeId"
+                    value={selectedTypeOfService?.serviceType || ""}
+                    onChange={handleSelectChange}
+                  >
+                    <MenuItem value="">
+                      <em>None</em>
+                    </MenuItem>
+                    {typeOfServicesList?.map((item) => (
+                      <MenuItem key={item.serviceTypeId} value={item.serviceTypeName}>
+                        {item.serviceTypeName}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <TextField
+                  size="small"
+                  fullWidth
+                  label="Service Remarks"
+                  multiline
+                  rows={1}
+                  className="col-span-2"
+                  name="serviceRemarks"
+                  value={form.serviceRemarks}
+                  onChange={handleChange}
+                />
+              </div>
+            </CardContent>
+
+            {/* Section 3 */}
+            <CardContent style={{ padding: "8px", display: "flex", flexDirection: "column", height: 300 }}>
+              {/* Scrollable Table */}
+              <div style={{ flex: 1, overflowY: "auto" }}>
+                <Table size="small" stickyHeader>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell style={{ width: 50 }}>S.No</TableCell>
+                      <TableCell style={{ width: 120 }}>Date</TableCell>
+                      <TableCell style={{ width: 100 }}>Time</TableCell>
+                      <TableCell style={{ width: "65%" }}>Description</TableCell>
+                      <TableCell style={{ width: 60, textAlign: "center" }}>Action</TableCell>
+                    </TableRow>
+                  </TableHead>
+
+                  <TableBody>
+                    {activities.map((row, index) => (
+                      <TableRow key={index} style={{ height: 48 }}>
+                        <TableCell>
+                          <span>{index + 1}</span>
+                        </TableCell>
+                        {/* Date */}
+                        <TableCell>
+                          <TextField
+                            type="date"
+                            size="small"
+                            variant="outlined"
+                            value={row.activityDate || ""}
+                            onChange={(e) => updateRow(index, "activityDate", e.target.value)}
+                            style={{ minWidth: 120 }}
+                          />
+                        </TableCell>
+
+                        {/* Time */}
+                        <TableCell>
+                          <TextField
+                            type="time"
+                            size="small"
+                            variant="outlined"
+                            value={row.activityTime || ""}
+                            onChange={(e) => updateRow(index, "activityTime", e.target.value)}
+                            style={{ minWidth: 100 }}
+                          />
+                        </TableCell>
+
+                        {/* Description */}
+                        <TableCell>
+                          <TextareaAutosize
+                            minRows={1}
+                            style={{
+                              width: "100%",
+                              fontSize: "0.875rem",
+                              padding: "6px 10px",
+                              borderRadius: 4,
+                              border: "1px solid #c4c4c4",
+                              resize: "vertical",
+                            }}
+                            placeholder="Enter description"
+                            value={row.description}
+                            onChange={(e) => updateRow(index, "description", e.target.value)}
+                          />
+                        </TableCell>
+
+                        {/* Delete Button */}
+                        <TableCell align="center">
+                          <Button
+                            variant="transperent"
+                            color="error"
+                            size="small"
+                            onClick={() => deleteRow(index)}
+                          >
+                            <FaTrash />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              <div style={{ paddingTop: "8px", borderTop: "1px solid #eee" }}>
+                <div class="flex justify-between items-center">
+                    <Button variant="outlined" size="small" onClick={addRow}>
+                        Add New Row
+                    </Button>
+                    <div>
+                    Total: {activities?.length.toString().padStart(2, '0')}
+                    </div>
+                </div>
+            </div>
+            </CardContent>
+
+            {/* Section 4 */}
+            <CardContent>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: 6,
+                  fontWeight: 500,
+                  fontSize: "0.95rem",
+                  color: "#333",
+                }}
               >
-                Add New Row
+                Remarks
+              </label>
+              <TextareaAutosize
+                minRows={1}
+                style={{
+                  width: "100%",
+                  fontSize: "0.875rem",
+                  padding: "8.5px 14px",
+                  borderRadius: 4,
+                  border: "1px solid #c4c4c4",
+                  resize: "vertical",
+                }}
+                placeholder="Enter Remarks"
+                name="remarks"
+                value={form.remarks}
+                onChange={handleChange}
+              />
+            </CardContent>
+          </Card>
+          <div className="mt-4 flex gap-2 justify-center">
+            {form?.serviceId && (
+              <Button
+                variant="contained"
+                size="small"
+                color="primary"
+                onClick={handleClearOrNewForm}
+              >
+                Create New Form
               </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Section 4 */}
-        <Card>
-          <CardContent>
-            <TextField
+            )}
+            <Button
+              variant="outlined"
               size="small"
-              fullWidth
-              label="Remarks"
-              multiline
-              rows={4}
-            />
-          </CardContent>
-        </Card>
+              color="secondary"
+              onClick={handleClearOrReset}
+            >
+              {form?.serviceId ? "Reset" : "Clear"}
+            </Button>
+            <Button
+              variant="contained"
+              size="small"
+              color="primary"
+              onClick={handleSave}
+            >
+              {form?.serviceId ? "Update" : "Save"}
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              color="primary"
+              onClick={() => window.print()}
+            >
+              Print
+            </Button>
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
-

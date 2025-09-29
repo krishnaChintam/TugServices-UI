@@ -70,3 +70,39 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+
+@media (prefers-color-scheme: dark) {
+  /* Fixes for form elements in dark mode */
+  input, textarea, select {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  /* Calendar/Time picker icon fix for dark mode */
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: invert(1); /* makes icons visible in dark mode */
+    cursor: pointer;
+    padding: 4px;
+  }
+
+  /* Custom scrollbar for dark mode */
+  ::-webkit-scrollbar {
+    width: 8px; /* slim scrollbar */
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent; /* or a light/dark color */
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: #ccc; /* light gray thumb */
+    border-radius: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: #aaa; /* slightly darker on hover */
+  }
+}

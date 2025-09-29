@@ -1,28 +1,21 @@
 import {
   FaUser,
   FaChartBar,
-  FaVideo,
-  FaFileInvoiceDollar,
   FaServicestack,
-  FaShieldAlt,
-  FaCog,
-  FaEnvelope,
   FaSignOutAlt,
   FaChevronLeft,
-  FaList
 } from 'react-icons/fa';
 import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import authService from '@/api/authService';
 
 const Sidebar = ({ sidebarOpen, toggleSidebar }) => {
   const navigate = useNavigate();
   const [username, setUsername] = useState('User');
+  const userData = JSON.parse(localStorage.getItem('userData'))
 
   useEffect(() => {
     try {
-      const userData = JSON.parse(localStorage.getItem('userData'));
       if (userData && userData.username) {
         setUsername(userData.username);
       }
@@ -37,69 +30,73 @@ const Sidebar = ({ sidebarOpen, toggleSidebar }) => {
     { icon: <FaServicestack />, text: 'Tug Services', path: '/tugservices' },
   ];
 
-  const handleMenuClick = (path) => {
-    if (path) {
-      navigate(path);
-      // Close sidebar on mobile after navigation
-      toggleSidebar();
+  const handleMenuClick = (item) => {
+    if (item.path) {
+      navigate(item.path);
     }
+    toggleSidebar();
   };
-
+  
   const handleLogout = () => {
-    // Call the logout method from authService
-    authService.logout();
-    
-    // Navigate to login page
     navigate('/login');
   };
 
   return (
     <div
       className={`
-        fixed top-[56px] left-0 h-[calc(100vh-56px)] bg-white border-r shadow-md
+        fixed top-[56px] left-0 h-[calc(100vh-56px)] bg-white border-r
         transition-all duration-300 ease-in-out z-40
-        ${sidebarOpen 
-          ? "w-64 translate-x-0" 
-          : "w-0 -translate-x-full"}
+        ${sidebarOpen ? "w-56 translate-x-0" : "w-0 -translate-x-full"}
       `}
     >
-      {/* User Profile */}
-      <div className={`px-4 py-4 border-b flex items-center ${!sidebarOpen ? "justify-center hidden" : ""}`}>
-        <div className={sidebarOpen 
-            ? "w-10 h-10 bg-blue-100 items-center rounded-full flex justify-center text-blue-800 mr-3" 
-            : "text-blue-800 hidden"}
-        >
-          <FaUser />
-        </div>
+      {/* Sidebar Header with User Info and Toggle Button */}
+      <div className={`flex items-center justify-between px-4 py-3 border-b ${!sidebarOpen ? "hidden" : ""}`}>
+        <div className="flex items-center">
+          <div className="w-8 h-8 flex items-center justify-center text-gray-600 mr-2">
+            <FaUser size={16} />
+          </div>
         <div className={sidebarOpen ? "" : "hidden"}>
-          <div className="text-sm text-gray-500">Welcome</div>
-          <div className="font-semibold text-gray-900">{username}</div>
+            <div className="text-xs text-gray-500">Welcome</div>
+            <div className="text-sm font-medium text-gray-900">{username}</div>
+          </div>
         </div>
+        {/* Toggle Button */}
+        <button
+          onClick={toggleSidebar}
+          className="p-2 text-gray-500 hover:text-blue-600 focus:outline-none focus:ring-0 bg-transparent border-none transform transition-all duration-200 group"
+          title="Close Menu"
+        >
+          <div className="flex items-center transform transition-transform duration-200 group-hover:-translate-x-1">
+            <FaChevronLeft size={16} />
+            <FaChevronLeft
+              size={16}
+              className="opacity-0 group-hover:opacity-100 -ml-2 transition-opacity duration-200"
+            />
+          </div>
+        </button>
       </div>
 
       {/* Navigation Menu */}
-      <div className="flex-1 overflow-y-auto py-2">
+      <div className="flex-1 overflow-y-auto py-1">
         <ul>
           {menuItems.map((item, index) => (
-            <li key={index} className="mb-1">
+            <li key={index} className="mb-0.5">
               <a
                 href="#"
                 onClick={(e) => {
                   e.preventDefault();
-                  handleMenuClick(item.path);
+                  handleMenuClick(item);
                 }}
                 className={`
-                  flex items-center px-4 py-3 text-sm 
+                  flex items-center px-4 py-2 text-sm rounded-md
                   ${item.active
-                      ? "text-indigo-600 bg-indigo-100 border-l-4 border-indigo-600"
-                      : "text-gray-600 hover:bg-gray-50"
+                    ? "text-blue-600 font-medium"
+                    : "text-gray-600 hover:text-blue-600 hover:bg-gray-50"
                   }
-                  ${!sidebarOpen && "justify-center"}
+                  ${!sidebarOpen ? "justify-center" : ""}
                 `}
               >
-                <span className={`text-lg ${!sidebarOpen ? "mx-auto" : "mr-3"}`}>
-                  {item.icon}
-                </span>
+                <span className="text-base mr-2">{item.icon}</span>
                 <span className={sidebarOpen ? "" : "hidden"}>{item.text}</span>
               </a>
             </li>
@@ -108,31 +105,23 @@ const Sidebar = ({ sidebarOpen, toggleSidebar }) => {
       </div>
 
       {/* Footer Icons */}
-      <div className={`p-4 fixed bottom-0 left-0 right-0 flex ${sidebarOpen ? "justify-between" : "justify-center"}`}>
-        <button className={`text-gray-600 hover:text-blue-600 ${sidebarOpen ? "" : "hidden"}`}>
-          <FaCog />
-        </button>
-        <button className={`text-gray-600 hover:text-blue-600 ${sidebarOpen ? "" : "hidden"}`}>
-          <FaEnvelope />
-        </button>
-        <button 
-          onClick={handleLogout}
-          className={`text-gray-600 hover:text-blue-600 ${sidebarOpen ? "" : "hidden"}`}
-          title="Logout"
-        >
-          <FaSignOutAlt />
-        </button>
-      </div>
-
-      {/* Toggle Button - Visible on mobile when sidebar is open */}
-      {sidebarOpen && (
-        <button
-          onClick={toggleSidebar}
-          className="absolute top-2 right-2 text-gray-600 hover:text-blue-600 focus:outline-none"
-        >
-          <FaChevronLeft />
-        </button>
-      )}
+      <div className={`p-2 fixed bottom-0 left-0 right-0 flex ${sidebarOpen ? "justify-between" : "justify-center"} border-t`}>
+      <button
+    onClick={handleLogout}
+    className={`
+      flex items-center px-4 py-2 text-sm text-gray-600 rounded-md
+      hover:text-blue-600 hover:bg-gray-50
+      transition-all duration-200
+      ${sidebarOpen ? "w-full justify-start" : "hidden"}
+    `}
+    title="Logout"
+  >
+    <span className="text-base">
+      <FaSignOutAlt size={16} />
+    </span>
+    {sidebarOpen && <span className="ml-2">Logout</span>}
+  </button>
+</div>
     </div>
   );
 };

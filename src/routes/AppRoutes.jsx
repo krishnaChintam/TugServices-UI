@@ -16,13 +16,13 @@ const LoadingFallback = () => <div className="loading">Loading...</div>;
 const routeConfig = [
   { path: 'dashboard', element: <Dashboard /> },
   { path: 'tugservices', element: <TugServices /> },
-
+  { path: 'tugservices/:id', element: <TugServices /> },
 ];
 
 // Sidebar menu redirects (no pages yet)
 const sidebarRedirectRoutes = [
-  'telemedicine',
-  'billing',
+  'temp1',
+  'temp2',
 ];
 
 // Auth Redirect component
