@@ -29,6 +29,7 @@ const Layout = () => {
           ></div>
         )}
       </div>
+      {/*Todo: Need to make footer scrollable not fixed */}
       {/* <Footer /> */}
       <ToastContainer headerHeight={64} />
     </div>
