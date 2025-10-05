@@ -78,6 +78,7 @@ export const API_ENDPOINTS = {
     UPDATE_SERVICE: '/tug-services/update',
     DELETE_SERVICE: '/tug-services/delete',
     SEARCH_SERVICES: '/tug-services/search',
+    GET_SERVICE_BY_USERNAME: '/tug-services/getByUsername',
   },
 
   // Locations endpoints

@@ -22,7 +22,9 @@ const Header = ({ toggleSidebar }) => {
         />
         <div className="flex items-center space-x-2 cursor-pointer" onClick={() => navigate("/dashboard")}>
           <img src={logo} alt="Logo" className="h-8 w-auto" />
-          <span>{userData?.tugName}</span>
+          <span className="ml-2 text-sm sm:text-base md:text-lg font-semibold text-gray-800 break-words">
+            {userData?.tugName}
+          </span>
         </div>
       </div>
   
