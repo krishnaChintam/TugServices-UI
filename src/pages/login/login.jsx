@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button, Checkbox, TextField, Box, Typography, Link, Paper,Snackbar, Alert } from '@mui/material';
 import authService from '@/api/authService';
 import { useNavigate } from 'react-router-dom';
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 const LoginPage = () => {
   const navigate = useNavigate();

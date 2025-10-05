@@ -18,7 +18,7 @@ const Layout = () => {
       <div className="flex flex-1 overflow-hidden">
         <Sidebar sidebarOpen={sidebarOpen} toggleSidebar={toggleSidebar} />
         <main className="content flex-1 overflow-auto">
-          <Outlet />
+            <Outlet />
         </main>
         {/* Mobile overlay to close sidebar */}
         {sidebarOpen && (
@@ -29,7 +29,7 @@ const Layout = () => {
           ></div>
         )}
       </div>
-      <Footer />
+      {/* <Footer /> */}
       <ToastContainer headerHeight={64} />
     </div>
   );
