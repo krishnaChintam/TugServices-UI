@@ -14,14 +14,19 @@ import {
   TextareaAutosize,
   InputLabel,
   FormControl,
-  Autocomplete
+  Autocomplete,
 } from "@mui/material";
 import { useParams, useNavigate } from "react-router-dom";
 import { FaTrash } from "react-icons/fa";
-import { locationService, vesselService, tugService,typeOfService } from "../../api/apiServices.js";
-import { defaultActivitiesList } from './sampleData.js';
-import { toast } from '../../components/common/toster.jsx';
-import ToastContainer from '../../components/common/toster.jsx';
+import {
+  locationService,
+  vesselService,
+  tugService,
+  typeOfService,
+} from "../../api/apiServices.js";
+import { defaultActivitiesList } from "./sampleData.js";
+import { toast } from "../../components/common/toster.jsx";
+import ToastContainer from "../../components/common/toster.jsx";
 import Loader from "@/components/Loader.jsx";
 
 export default function TugServices() {
@@ -36,7 +41,7 @@ export default function TugServices() {
   const [selectedTypeOfService, setSelectedTypeOfService] = useState("");
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
-  const userData = JSON.parse(localStorage.getItem('userData'));
+  const userData = JSON.parse(localStorage.getItem("userData"));
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -77,8 +82,8 @@ export default function TugServices() {
       locationName: res?.locationName,
     });
     setSelectedTypeOfService({
-      serviceType: res?.serviceType
-    })
+      serviceType: res?.serviceType,
+    });
     setErrors({}); // Clear errors on successful data load
   };
 
@@ -90,7 +95,7 @@ export default function TugServices() {
         patchResponseData(res);
       }
     } catch (error) {
-      console.error('Error fetching service:', error);
+      console.error("Error fetching service:", error);
       toast.error("Unable to fetch service details.");
     } finally {
       setLoading(false);
@@ -100,11 +105,12 @@ export default function TugServices() {
   const fetchOnloadData = async () => {
     try {
       setLoading(true);
-      const [locationsData, vesselsData,typeOfServicesData] = await Promise.all([
-        locationService.getAllLocations(),
-        vesselService.getAllVessels(),
-        typeOfService.getAllTypeOfServices()
-      ]);
+      const [locationsData, vesselsData, typeOfServicesData] =
+        await Promise.all([
+          locationService.getAllLocations(),
+          vesselService.getAllVessels(),
+          typeOfService.getAllTypeOfServices(),
+        ]);
       setLocations(locationsData || []);
       setVessels(vesselsData || []);
       setTypeOfServicesList(typeOfServicesData || []);
@@ -112,7 +118,7 @@ export default function TugServices() {
         await fetchSelectedData(id);
       }
     } catch (error) {
-      console.error('Error in fetchOnloadData:', error);
+      console.error("Error in fetchOnloadData:", error);
       toast.error("Failed to load master data.");
     } finally {
       setLoading(false);
@@ -121,26 +127,33 @@ export default function TugServices() {
 
   const addRow = () => {
     // Returns true if at least one activity has an empty or null date/time, otherwise false
-    const hasInvalid = activities.some(item => !item?.activityDate || !item?.activityTime);
-    if(hasInvalid) {
-      toast("Can't proceed: Incomplete activity details found.",{
+    const hasInvalid = activities.some(
+      (item) => !item?.activityDate || !item?.activityTime
+    );
+    if (hasInvalid) {
+      toast("Can't proceed: Incomplete activity details found.", {
         duration: 4000,
-        icon: '⚠️',
+        icon: "⚠️",
         style: {
-          background: '#ff9800',
-          color: '#fff',
-        }
-      })
+          background: "#ff9800",
+          color: "#fff",
+        },
+      });
       return;
     }
-    setActivities([...activities, { activityId: null, activityDate: "", activityTime: '', description: '' }]);
+    setActivities([
+      ...activities,
+      { activityId: null, activityDate: "", activityTime: "", description: "" },
+    ]);
   };
 
   const updateRow = (index, key, value) => {
-    if(key === "activityTime"){
-      value = `${value}:00`
+    if (key === "activityTime") {
+      value = `${value}:00`;
     }
-    setActivities(prev => prev.map((r, i) => (i === index ? { ...r, [key]: value } : r)));
+    setActivities((prev) =>
+      prev.map((r, i) => (i === index ? { ...r, [key]: value } : r))
+    );
   };
 
   const buildPayload = () => {
@@ -162,10 +175,12 @@ export default function TugServices() {
       isActive: form.isActive,
       activities: activities,
       serviceId: form.serviceId,
-      editedBy:  form?.serviceId ? userData?.username : "",
+      editedBy: form?.serviceId ? userData?.username : "",
       editedDate: form?.serviceId ? new Date().toISOString() : null,
       createdBy: form?.serviceId ? form?.createdBy : userData?.username,
-      createdDate: form?.serviceId ? form?.createdDate : new Date().toISOString(),
+      createdDate: form?.serviceId
+        ? form?.createdDate
+        : new Date().toISOString(),
     };
   };
 
@@ -197,7 +212,7 @@ export default function TugServices() {
     // }
 
     const payload = buildPayload();
-    console.log(payload)
+    console.log(payload);
     if (!validateForm()) {
       toast.error("Please fill in all mandatory fields.");
       return;
@@ -207,17 +222,17 @@ export default function TugServices() {
     try {
       if (payload?.serviceId) {
         const res = await tugService.updateService(payload.serviceId, payload);
-        toast.success('Updated successfully');
+        toast.success("Updated successfully");
         patchResponseData(res);
       } else {
         const res = await tugService.createService(payload);
         const newId = res?.serviceId;
-        toast.success('Saved successfully', { duration: 2000 });
+        toast.success("Saved successfully", { duration: 2000 });
         navigate(`/tugservices/${newId}`);
         patchResponseData(res);
       }
     } catch (err) {
-      console.error('Error saving:', err);
+      console.error("Error saving:", err);
       toast.error("Unable to save form");
     } finally {
       setLoading(false);
@@ -226,11 +241,11 @@ export default function TugServices() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleClearOrNewForm = () =>{
-    navigate('/tugservices/');
+  const handleClearOrNewForm = () => {
+    navigate("/tugservices/");
     setForm({
       refNo: "",
       serviceDate: new Date().toISOString().slice(0, 10),
@@ -245,7 +260,7 @@ export default function TugServices() {
       serviceRemarks: "",
       remarks: "",
       isActive: 1,
-      editedBy:  "",
+      editedBy: "",
       editedDate: null,
       createdBy: userData?.username,
       createdDate: new Date().toISOString(),
@@ -257,8 +272,8 @@ export default function TugServices() {
     setSelectedLocation("");
     setSelectedVessel("");
     setSelectedTypeOfService("");
-    toast.success("Form cleared. Ready for new entry!")
-  }
+    toast.success("Form cleared. Ready for new entry!");
+  };
 
   const handleClearOrReset = () => {
     if (form?.serviceId) {
@@ -273,25 +288,25 @@ export default function TugServices() {
         vesselName: defaultFormData?.vesselName,
       });
       setSelectedTypeOfService({
-        serviceType: defaultFormData?.serviceType
-      })
-      toast.success("Changes reverted. Initial data restored successfully!")
+        serviceType: defaultFormData?.serviceType,
+      });
+      toast.success("Changes reverted. Initial data restored successfully!");
       setErrors({}); // Clear errors on reset
-    }else{
-      handleClearOrNewForm()
+    } else {
+      handleClearOrNewForm();
     }
   };
 
   const handleSelectChange = (event) => {
     const { name, value } = event.target;
-    if (name === 'locationId') {
+    if (name === "locationId") {
       const locationData = locations.find((v) => v.locationId === value);
       setSelectedLocation({
         locationId: locationData?.locationId,
         locationName: locationData?.locationName,
       });
-      setForm(prev => ({ ...prev, locationId: value })); // Update form state
-    } else if(name === 'vesselId'){
+      setForm((prev) => ({ ...prev, locationId: value })); // Update form state
+    } else if (name === "vesselId") {
       const vesselData = vessels.find((v) => v.vesselId === value);
       setSelectedVessel({
         vesselId: vesselData.vesselId,
@@ -306,18 +321,24 @@ export default function TugServices() {
         lengthOverall: vesselData?.loa,
         draughtForward: vesselData?.dwt,
       });
-    }else{
-      const typeOfServiceData = typeOfServicesList.find((v) => v.serviceTypeName === value);
+    } else {
+      const typeOfServiceData = typeOfServicesList.find(
+        (v) => v.serviceTypeName === value
+      );
       setSelectedTypeOfService({
         serviceType: typeOfServiceData?.serviceTypeName,
       });
-      setForm(prev => ({ ...prev, serviceType: value })); // Update form state
+      setForm((prev) => ({
+        ...prev,
+        serviceType: value,
+        serviceRemarks: typeOfServiceData?.serviceTypeName,
+      })); // Update form state
     }
   };
 
   const handleAutocompleteChange = (event, newValue) => {
     // If a new value is typed and doesn't exist in the list
-    if (typeof newValue === 'string') {
+    if (typeof newValue === "string") {
       const newVessel = {
         vesselId: null, // A simple way to generate a unique ID
         vesselName: newValue,
@@ -333,17 +354,9 @@ export default function TugServices() {
     // Add the "Add [input value]" option if no match is found
     const isNew = !vessels.find((v) => v.vesselName === inputValue);
     if (isNew && option.vesselName === inputValue) {
-      return (
-        <li {...props}>
-          Add "{inputValue}"
-        </li>
-      );
+      return <li {...props}>Add "{inputValue}"</li>;
     }
-    return (
-      <li {...props}>
-        {option.vesselName}
-      </li>
-    );
+    return <li {...props}>{option.vesselName}</li>;
   };
 
   const deleteRow = (index) => {
@@ -356,34 +369,30 @@ export default function TugServices() {
       <Loader show={loading} />
       <ToastContainer headerHeight={64} />
       <div className="min-h-screen flex flex-col bg-gray-50">
-        <div className="container mx-auto px-4 pt-6">
-          <div className="flex flex-row gap-4 items-center">
-            <TextField
-              size="small"
-              label="Ref Num: *"
-              variant="standard"
-              name="refNo"
-              value={form.refNo}
-              onChange={handleChange}
-              error={errors.refNo}
-            />
-            <TextField
-              size="small"
-              label="Date:"
-              type="date"
-              variant="standard"
-              name="serviceDate"
-              value={form.serviceDate}
-              onChange={handleChange}
-            />
-          </div>
-        </div>
-        <div className="flex-1 container mx-auto px-4 py-6 ">
+        <div className="flex-1 w-full p-4">
           {/* Section 1 - Two Columns */}
           <Card>
             <CardContent>
               {/* 1st Row - Vessel Name, Location, IMO No */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <TextField
+                    size="small"
+                    label="Ref Num: *"
+                    name="refNo"
+                    value={form.refNo}
+                    onChange={handleChange}
+                    error={errors.refNo}
+                  />
+                  <TextField
+                    size="small"
+                    label="Date:"
+                    type="date"
+                    name="serviceDate"
+                    value={form.serviceDate}
+                    onChange={handleChange}
+                  />
+                </div>
                 {/* Vessel Name */}
                 <Autocomplete
                   fullWidth
@@ -420,8 +429,36 @@ export default function TugServices() {
                   }}
                 />
 
+                <div className="grid grid-cols-2 gap-3">
+                  {/* IMO No */}
+                  <TextField
+                    size="small"
+                    fullWidth
+                    label="IMO No"
+                    name="imoCode"
+                    value={form.imoCode}
+                    onChange={handleChange}
+                  />
+
+                  <TextField
+                    size="small"
+                    fullWidth
+                    label="Type of Vessel"
+                    name="vesselType"
+                    value={form.vesselType}
+                    onChange={handleChange}
+                  />
+                </div>
+              </div>
+              {/* 2nd Row - Length, Draught Fwd & Aft, Vessel Type */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Location */}
-                <FormControl fullWidth size="small" variant="outlined" error={errors.locationId}>
+                <FormControl
+                  fullWidth
+                  size="small"
+                  variant="outlined"
+                  error={errors.locationId}
+                >
                   <InputLabel id="location-label">Location *</InputLabel>
                   <Select
                     labelId="location-label"
@@ -440,29 +477,6 @@ export default function TugServices() {
                     ))}
                   </Select>
                 </FormControl>
-
-                {/* IMO No */}
-                <TextField
-                  size="small"
-                  fullWidth
-                  label="IMO No"
-                  name="imoCode"
-                  value={form.imoCode}
-                  onChange={handleChange}
-                />
-              </div>
-
-              {/* 2nd Row - Length, Draught Fwd & Aft, Vessel Type */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <TextField
-                  size="small"
-                  fullWidth
-                  label="Length Overall (M)"
-                  name="lengthOverall"
-                  value={form.lengthOverall}
-                  onChange={handleChange}
-                />
-
                 <div className="grid grid-cols-2 gap-3">
                   <TextField
                     size="small"
@@ -479,57 +493,89 @@ export default function TugServices() {
                     name="draughtAft"
                     value={form.draughtAft}
                     onChange={handleChange}
-                  />  
+                  />
                 </div>
 
-                <TextField
-                  size="small"
-                  fullWidth
-                  label="Type of Vessel"
-                  name="vesselType"
-                  value={form.vesselType}
-                  onChange={handleChange}
-                />
-              </div>
-            </CardContent>
-            {/* Section 2 */}
-            <CardContent className="space-y-3">
-              <div className="grid grid-cols-3 gap-6">
-              <FormControl fullWidth size="small" variant="outlined" error={errors.serviceTypeId}>
-                  <InputLabel id="typeOfService-label">Type of Service *</InputLabel>
-                  <Select
-                    labelId="typeOfService-label"
-                    label="Type of Service *"
-                    name="serviceTypeId"
-                    value={selectedTypeOfService?.serviceType || ""}
-                    onChange={handleSelectChange}
+                <div className="grid grid-cols-2 gap-3">
+                  <TextField
+                    size="small"
+                    fullWidth
+                    label="Length Overall (M)"
+                    name="lengthOverall"
+                    value={form.lengthOverall}
+                    onChange={handleChange}
+                  />
+                  <FormControl
+                    fullWidth
+                    size="small"
+                    variant="outlined"
+                    error={errors.serviceTypeId}
                   >
-                    <MenuItem value="">
-                      <em>None</em>
-                    </MenuItem>
-                    {typeOfServicesList?.map((item) => (
-                      <MenuItem key={item.serviceTypeId} value={item.serviceTypeName}>
-                        {item.serviceTypeName}
+                    <InputLabel id="typeOfService-label">
+                      Type of Service *
+                    </InputLabel>
+                    <Select
+                      labelId="typeOfService-label"
+                      label="Type of Service *"
+                      name="serviceTypeId"
+                      value={selectedTypeOfService?.serviceType || ""}
+                      onChange={handleSelectChange}
+                    >
+                      <MenuItem value="">
+                        <em>None</em>
                       </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                <TextField
-                  size="small"
-                  fullWidth
-                  label="Service Remarks"
-                  multiline
-                  rows={1}
-                  className="col-span-2"
-                  name="serviceRemarks"
-                  value={form.serviceRemarks}
-                  onChange={handleChange}
-                />
+                      {typeOfServicesList?.map((item) => (
+                        <MenuItem
+                          key={item.serviceTypeId}
+                          value={item.serviceTypeName}
+                        >
+                          {item.serviceTypeName}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </div>
+              </div>
+            {/* </CardContent> */}
+            {/* Section 2 */}
+            {/* <CardContent className="space-y-1"> */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                <div className="grid grid-cols-1 gap-3">
+                  <TextField
+                    size="small"
+                    fullWidth
+                    label="Service Remarks"
+                    multiline
+                    rows={1}
+                    name="serviceRemarks"
+                    value={form.serviceRemarks}
+                    onChange={handleChange}
+                  />
+                </div>
+                <div className="grid grid-cols-1 gap-3">
+                  <TextField
+                   size="small"
+                   fullWidth
+                   label="Remarks"
+                   multiline
+                   rows={1}
+                    name="remarks"
+                    value={form.remarks}
+                    onChange={handleChange}
+                  />
+                </div>
               </div>
             </CardContent>
 
             {/* Section 3 */}
-            <CardContent style={{ padding: "8px", display: "flex", flexDirection: "column", height: 300 }}>
+            <CardContent
+              style={{
+                padding: "8px",
+                display: "flex",
+                flexDirection: "column",
+                height: 300,
+              }}
+            >
               {/* Scrollable Table */}
               <div style={{ flex: 1, overflowY: "auto" }}>
                 <Table size="small" stickyHeader>
@@ -538,8 +584,12 @@ export default function TugServices() {
                       <TableCell style={{ width: 50 }}>S.No</TableCell>
                       <TableCell style={{ width: 120 }}>Date</TableCell>
                       <TableCell style={{ width: 100 }}>Time</TableCell>
-                      <TableCell style={{ width: "65%" }}>Description</TableCell>
-                      <TableCell style={{ width: 60, textAlign: "center" }}>Action</TableCell>
+                      <TableCell style={{ width: "65%" }}>
+                        Description
+                      </TableCell>
+                      <TableCell style={{ width: 60, textAlign: "center" }}>
+                        Action
+                      </TableCell>
                     </TableRow>
                   </TableHead>
 
@@ -556,7 +606,9 @@ export default function TugServices() {
                             size="small"
                             variant="outlined"
                             value={row.activityDate || ""}
-                            onChange={(e) => updateRow(index, "activityDate", e.target.value)}
+                            onChange={(e) =>
+                              updateRow(index, "activityDate", e.target.value)
+                            }
                             style={{ minWidth: 120 }}
                           />
                         </TableCell>
@@ -568,7 +620,9 @@ export default function TugServices() {
                             size="small"
                             variant="outlined"
                             value={row.activityTime || ""}
-                            onChange={(e) => updateRow(index, "activityTime", e.target.value)}
+                            onChange={(e) =>
+                              updateRow(index, "activityTime", e.target.value)
+                            }
                             style={{ minWidth: 100 }}
                           />
                         </TableCell>
@@ -587,7 +641,9 @@ export default function TugServices() {
                             }}
                             placeholder="Enter description"
                             value={row.description}
-                            onChange={(e) => updateRow(index, "description", e.target.value)}
+                            onChange={(e) =>
+                              updateRow(index, "description", e.target.value)
+                            }
                           />
                         </TableCell>
 
@@ -610,18 +666,18 @@ export default function TugServices() {
 
               <div style={{ paddingTop: "8px", borderTop: "1px solid #eee" }}>
                 <div class="flex justify-between items-center">
-                    <Button variant="outlined" size="small" onClick={addRow}>
-                        Add New Row
-                    </Button>
-                    <div>
-                    Total: {activities?.length.toString().padStart(2, '0')}
-                    </div>
+                  <Button variant="outlined" size="small" onClick={addRow}>
+                    Add New Row
+                  </Button>
+                  <div>
+                    Total: {activities?.length.toString().padStart(2, "0")}
+                  </div>
                 </div>
-            </div>
+              </div>
             </CardContent>
 
             {/* Section 4 */}
-            <CardContent>
+            {/* <CardContent>
               <label
                 style={{
                   display: "block",
@@ -648,7 +704,7 @@ export default function TugServices() {
                 value={form.remarks}
                 onChange={handleChange}
               />
-            </CardContent>
+            </CardContent> */}
           </Card>
           <div className="mt-4 flex gap-2 justify-center">
             {form?.serviceId && (

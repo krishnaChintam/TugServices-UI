@@ -1,45 +1,55 @@
+const now = new Date();
+
+// ✅ Local date (YYYY-MM-DD)
+const currentDate = now.toISOString().slice(0, 10);
+
+// ✅ Local time (HH:mm:ss)
+const hours = String(now.getHours()).padStart(2, '0');
+const minutes = String(now.getMinutes()).padStart(2, '0');
+const seconds = String(now.getSeconds()).padStart(2, '0');
+const currentTime = `${hours}:${minutes}:${'00'}`;
 // Sample data set 1 - Tug Service Timeline
 export const defaultActivitiesList =  [
   {
       "activityId": null,
-      "activityDate": "2025-08-18",
-      "activityTime": "08:40:00",
+      "activityDate": currentDate,
+      "activityTime": currentTime,
       "description": "RECEIVED ORDER FROM MM"
   },
   {
       "activityId": null,
-      "activityDate": "2025-08-18",
-      "activityTime": "08:45:00",
+      "activityDate": currentDate,
+      "activityTime": currentTime,
       "description": "PROCEEDED TO ASSIST MT. KAROLOS"
   },
   {
       "activityId": null,
-      "activityDate": "2025-08-18",
-      "activityTime": "09:00:00",
+      "activityDate": currentDate,
+      "activityTime": currentTime,
       "description": "ARRIVED AT RV POSITION"
   },
   {
       "activityId": null,
-      "activityDate": "2025-08-18",
-      "activityTime": "09:30:00",
+      "activityDate": currentDate,
+      "activityTime": currentTime,
       "description": "TUG LINE MADE FAST"
   },
   {
       "activityId": null,
-      "activityDate": "2025-08-18",
-      "activityTime": "12:06:00",
+      "activityDate": currentDate,
+      "activityTime": currentTime,
       "description": "TUG LINE CAST OFF"
   },
   {
       "activityId": null,
-      "activityDate": "2025-08-18",
-      "activityTime": "12:30:00",
+      "activityDate": currentDate,
+      "activityTime": currentTime,
       "description": "SERVICE COMPLETED"
   },
   {
       "activityId": null,
-      "activityDate": "2025-08-18",
-      "activityTime": "12:35:00",
+      "activityDate": currentDate,
+      "activityTime": currentTime,
       "description": "RETURNED TO BASE, FWE"
   }
 ]
