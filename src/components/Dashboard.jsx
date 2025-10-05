@@ -5,6 +5,7 @@ import { Box, TextField, MenuItem, IconButton, InputAdornment } from "@mui/mater
 import DataTable from "./common/DataTable";
 import {tugService} from "../api/apiServices";
 import Loader from "@/components/Loader.jsx";
+import { TUG_SERVICES } from '../api/apiConfig.js';
 
 const Dashboard = () => {
   const [search, setSearch] = useState("");
@@ -13,11 +14,14 @@ const Dashboard = () => {
   const [gridApi, setGridApi] = useState(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const userData = JSON.parse(localStorage.getItem('userData'));
   
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      const response = await tugService.getAllServices();
+      // http://localhost:8080/tug-services/getByUsername/user
+      const url = userData?.role === 'Admin' ? TUG_SERVICES.GET_ALL_SERVICES : `${TUG_SERVICES?.GET_SERVICE_BY_USERNAME}/${userData?.username}`
+      const response = await tugService.getAllServices(url);
       setLoading(false);
       setData(response);
     };
