@@ -36,7 +36,7 @@ export default function TugServices() {
   const [selectedTypeOfService, setSelectedTypeOfService] = useState("");
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
-  const userData = JSON.parse(localStorage.getItem('userData'))
+  const userData = JSON.parse(localStorage.getItem('userData'));
   const navigate = useNavigate();
 
   useEffect(() => {
