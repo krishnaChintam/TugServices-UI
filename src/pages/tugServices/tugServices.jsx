@@ -311,7 +311,7 @@ export default function TugServices() {
       setSelectedTypeOfService({
         serviceType: typeOfServiceData?.serviceTypeName,
       });
-      setForm(prev => ({ ...prev, serviceType: value })); // Update form state
+      setForm(prev => ({ ...prev, serviceType: value,serviceRemarks: typeOfServiceData?.serviceTypeName })); // Update form state
     }
   };
 
@@ -361,7 +361,6 @@ export default function TugServices() {
             <TextField
               size="small"
               label="Ref Num: *"
-              variant="standard"
               name="refNo"
               value={form.refNo}
               onChange={handleChange}
