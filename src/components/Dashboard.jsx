@@ -55,13 +55,13 @@ const onGridReady = (params) => {
 
   // Quick stats data
   const columns = [
-    { headerName: "Vessel Name", field: "vesselName", sortable: true, flex: 1 },
-    { headerName: "Vessel Type", field: "vesselType", sortable: true, flex: 1 },
-    { headerName: "Imo Code", field: "imoCode", sortable: true, flex: 1 },
-    { headerName: "Service Type", field: "serviceType", sortable: true, flex: 1 },
-    // { headerName: "Service Date", field: "serviceDate", sortable: true, flex: 1 },
-    // { headerName: "Service Remarks", field: "serviceRemarks", sortable: true, flex: 1 },
-    // { headerName: "Ref No", field: "refNo", sortable: true, flex: 1 },
+    { headerName: "Date", field: "serviceDate", sortable: true, flex: 1 },
+    { headerName: "Voucher No", field: "refNo", sortable: true, flex: 1 },
+    { headerName: "Location", field: "location", sortable: true, flex: 1 },
+    { headerName: "Mother Vessel", field: "motherVessel", sortable: true, flex: 1 },
+    { headerName: "Doughter Vessel", field: "vesselName", sortable: true, flex: 1 },
+    { headerName: "Tug Name", field: "tugName", sortable: true, flex: 1 },
+    { headerName: "Type of Service", field: "serviceRemarks", sortable: true, flex: 1 },
     { headerName: "Remarks", field: "remarks", sortable: true, flex: 1 },
     {
       headerName: "Actions",
