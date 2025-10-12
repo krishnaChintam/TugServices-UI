@@ -37,6 +37,7 @@ export default function TugServices() {
   const [typeOfServicesList, setTypeOfServicesList] = useState([]);
   const [defaultFormData, setDefaultFormData] = useState(null);
   const [selectedVessel, setSelectedVessel] = useState("");
+  const [selectedMotherVessel, setSelectedMotherVessel] = useState("");
   const [selectedLocation, setSelectedLocation] = useState("");
   const [selectedTypeOfService, setSelectedTypeOfService] = useState("");
   const [loading, setLoading] = useState(false);
@@ -67,6 +68,8 @@ export default function TugServices() {
     editedDate: null,
     createdBy: "",
     createdDate: null,
+    motherVessel: null,
+    tugName: ''
   });
 
   const patchResponseData = (res) => {
@@ -76,6 +79,9 @@ export default function TugServices() {
     setSelectedVessel({
       vesselId: res?.vesselId,
       vesselName: res?.vesselName,
+    });
+    setSelectedMotherVessel({
+      motherVessel: res?.motherVessel,
     });
     setSelectedLocation({
       locationId: res?.locationId,
@@ -178,9 +184,9 @@ export default function TugServices() {
       editedBy: form?.serviceId ? userData?.username : "",
       editedDate: form?.serviceId ? new Date().toISOString() : null,
       createdBy: form?.serviceId ? form?.createdBy : userData?.username,
-      createdDate: form?.serviceId
-        ? form?.createdDate
-        : new Date().toISOString(),
+      createdDate: form?.serviceId ? form?.createdDate : new Date().toISOString(),
+      motherVessel: form.motherVessel,
+      tugName: form?.serviceId ? form?.tugName : userData?.tugName
     };
   };
 
@@ -206,13 +212,7 @@ export default function TugServices() {
   };
 
   const handleSave = async () => {
-    // if (!validateForm()) {
-    //   toast.error("Please fill in all mandatory fields.");
-    //   return;
-    // }
-
     const payload = buildPayload();
-    console.log(payload);
     if (!validateForm()) {
       toast.error("Please fill in all mandatory fields.");
       return;
@@ -242,6 +242,9 @@ export default function TugServices() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+    if (name === "refNo" && value) {
+      setErrors({ ...errors, refNo: false });
+    }
   };
 
   const handleClearOrNewForm = () => {
@@ -267,10 +270,13 @@ export default function TugServices() {
       serviceId: null,
       locationName: "",
       vesselName: "",
+      motherVessel: null,
+      tugName: ""
     });
     setActivities(defaultActivitiesList);
     setSelectedLocation("");
     setSelectedVessel("");
+    setSelectedMotherVessel("");
     setSelectedTypeOfService("");
     toast.success("Form cleared. Ready for new entry!");
   };
@@ -286,6 +292,9 @@ export default function TugServices() {
       setSelectedVessel({
         vesselId: defaultFormData?.vesselId,
         vesselName: defaultFormData?.vesselName,
+      });
+      setSelectedMotherVessel({
+        motherVessel: defaultFormData?.motherVessel,
       });
       setSelectedTypeOfService({
         serviceType: defaultFormData?.serviceType,
@@ -306,6 +315,7 @@ export default function TugServices() {
         locationName: locationData?.locationName,
       });
       setForm((prev) => ({ ...prev, locationId: value })); // Update form state
+      setErrors({ ...errors, locationId: false });
     } else if (name === "vesselId") {
       const vesselData = vessels.find((v) => v.vesselId === value);
       setSelectedVessel({
@@ -320,6 +330,15 @@ export default function TugServices() {
         draughtAft: vesselData?.arrDraft,
         lengthOverall: vesselData?.loa,
         draughtForward: vesselData?.dwt,
+      });
+    } else if (name === "motherVessel") {
+      const motherVesselData = vessels.find((v) => v.vesselName === value);
+      setSelectedMotherVessel({
+        motherVessel: motherVesselData?.vesselName,
+      });
+      setForm({
+        ...form,
+        motherVessel: motherVesselData?.vesselName,
       });
     } else {
       const typeOfServiceData = typeOfServicesList.find(
@@ -345,8 +364,10 @@ export default function TugServices() {
       };
       setVessels((prevVessels) => [...prevVessels, newVessel]);
       setSelectedVessel(newVessel);
+      setErrors({ ...errors, vesselName: false });
     } else {
       setSelectedVessel(newValue);
+      setErrors({ ...errors, vesselName: false });
     }
   };
 
@@ -373,8 +394,8 @@ export default function TugServices() {
           {/* Section 1 - Two Columns */}
           <Card>
             <CardContent>
-              {/* 1st Row - Vessel Name, Location, IMO No */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
+              {/* 1st Row */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
                 <div className="grid grid-cols-2 gap-3">
                   <TextField
                     size="small"
@@ -406,6 +427,7 @@ export default function TugServices() {
                       {...params}
                       label="Vessel Name *"
                       variant="outlined"
+                      error={errors.vesselName}
                     />
                   )}
                   freeSolo
@@ -429,6 +451,37 @@ export default function TugServices() {
                   }}
                 />
 
+                <div className="grid grid-cols-1 gap-3">
+                  <FormControl
+                    fullWidth
+                    size="small"
+                    variant="outlined"
+                    error={errors.motherVessel}
+                  >
+                    <InputLabel id="motherVessel-label">
+                      Mother Vessel
+                    </InputLabel>
+                    <Select
+                      labelId="motherVessel-label"
+                      label="Mother Vessel"
+                      name="motherVessel"
+                      value={selectedMotherVessel?.motherVessel || ""}
+                      onChange={handleSelectChange}
+                    >
+                      <MenuItem value="">
+                        <em>None</em>
+                      </MenuItem>
+                      {vessels.map((item) => (
+                        <MenuItem key={item.vesselName} value={item.vesselName}>
+                          {item.vesselName}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </div>
+              </div>
+              {/* 2nd Row */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div className="grid grid-cols-2 gap-3">
                   {/* IMO No */}
                   <TextField
@@ -449,34 +502,33 @@ export default function TugServices() {
                     onChange={handleChange}
                   />
                 </div>
-              </div>
-              {/* 2nd Row - Length, Draught Fwd & Aft, Vessel Type */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Location */}
-                <FormControl
-                  fullWidth
-                  size="small"
-                  variant="outlined"
-                  error={errors.locationId}
-                >
-                  <InputLabel id="location-label">Location *</InputLabel>
-                  <Select
-                    labelId="location-label"
-                    label="Location *"
-                    name="locationId"
-                    value={selectedLocation?.locationId || ""}
-                    onChange={handleSelectChange}
+                <div className="grid grid-cols-1 gap-3">
+                  <FormControl
+                    fullWidth
+                    size="small"
+                    variant="outlined"
+                    error={errors.locationId}
                   >
-                    <MenuItem value="">
-                      <em>None</em>
-                    </MenuItem>
-                    {locations.map((item) => (
-                      <MenuItem key={item.locationId} value={item.locationId}>
-                        {item.locationName}
+                    <InputLabel id="location-label">Location *</InputLabel>
+                    <Select
+                      labelId="location-label"
+                      label="Location *"
+                      name="locationId"
+                      value={selectedLocation?.locationId || ""}
+                      onChange={handleSelectChange}
+                    >
+                      <MenuItem value="">
+                        <em>None</em>
                       </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                      {locations.map((item) => (
+                        <MenuItem key={item.locationId} value={item.locationId}>
+                          {item.locationName}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </div>
                 <div className="grid grid-cols-2 gap-3">
                   <TextField
                     size="small"
@@ -495,7 +547,9 @@ export default function TugServices() {
                     onChange={handleChange}
                   />
                 </div>
-
+              </div>
+              {/* 3rd Row */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
                 <div className="grid grid-cols-2 gap-3">
                   <TextField
                     size="small"
@@ -535,30 +589,24 @@ export default function TugServices() {
                     </Select>
                   </FormControl>
                 </div>
-              </div>
-            {/* </CardContent> */}
-            {/* Section 2 */}
-            {/* <CardContent className="space-y-1"> */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                <TextField
+                  size="small"
+                  fullWidth
+                  label="Service Remarks"
+                  multiline
+                  rows={1}
+                  name="serviceRemarks"
+                  value={form.serviceRemarks}
+                  onChange={handleChange}
+                />
+
                 <div className="grid grid-cols-1 gap-3">
                   <TextField
                     size="small"
                     fullWidth
-                    label="Service Remarks"
+                    label="Remarks"
                     multiline
                     rows={1}
-                    name="serviceRemarks"
-                    value={form.serviceRemarks}
-                    onChange={handleChange}
-                  />
-                </div>
-                <div className="grid grid-cols-1 gap-3">
-                  <TextField
-                   size="small"
-                   fullWidth
-                   label="Remarks"
-                   multiline
-                   rows={1}
                     name="remarks"
                     value={form.remarks}
                     onChange={handleChange}
@@ -675,36 +723,6 @@ export default function TugServices() {
                 </div>
               </div>
             </CardContent>
-
-            {/* Section 4 */}
-            {/* <CardContent>
-              <label
-                style={{
-                  display: "block",
-                  marginBottom: 6,
-                  fontWeight: 500,
-                  fontSize: "0.95rem",
-                  color: "#333",
-                }}
-              >
-                Remarks
-              </label>
-              <TextareaAutosize
-                minRows={1}
-                style={{
-                  width: "100%",
-                  fontSize: "0.875rem",
-                  padding: "8.5px 14px",
-                  borderRadius: 4,
-                  border: "1px solid #c4c4c4",
-                  resize: "vertical",
-                }}
-                placeholder="Enter Remarks"
-                name="remarks"
-                value={form.remarks}
-                onChange={handleChange}
-              />
-            </CardContent> */}
           </Card>
           <div className="mt-4 flex gap-2 justify-center">
             {form?.serviceId && (

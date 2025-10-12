@@ -1,11 +1,12 @@
 import React, { useState,useEffect } from "react";
 import { FaEdit } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import { Box, TextField, MenuItem, IconButton, InputAdornment } from "@mui/material";
+import { Box, IconButton, Button } from "@mui/material";
 import DataTable from "./common/DataTable";
 import {tugService} from "../api/apiServices";
 import Loader from "@/components/Loader.jsx";
 import { TUG_SERVICES } from '../api/apiConfig.js';
+import CommonServices from "./common/commonService";
 
 const Dashboard = () => {
   const [search, setSearch] = useState("");
@@ -19,9 +20,12 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      // http://localhost:8080/tug-services/getByUsername/user
       const url = userData?.role === 'Admin' ? TUG_SERVICES.GET_ALL_SERVICES : `${TUG_SERVICES?.GET_SERVICE_BY_USERNAME}/${userData?.username}`
-      const response = await tugService.getAllServices(url);
+      let response = await tugService.getAllServices(url);
+      response?.forEach(item => {
+        item.serviceDate = CommonServices.formatDate(item.serviceDate);
+      });
+      console.log(response)
       setLoading(false);
       setData(response);
     };
@@ -55,14 +59,14 @@ const onGridReady = (params) => {
 
   // Quick stats data
   const columns = [
-    { headerName: "Vessel Name", field: "vesselName", sortable: true, flex: 1 },
-    { headerName: "Vessel Type", field: "vesselType", sortable: true, flex: 1 },
-    { headerName: "Imo Code", field: "imoCode", sortable: true, flex: 1 },
-    { headerName: "Service Type", field: "serviceType", sortable: true, flex: 1 },
-    // { headerName: "Service Date", field: "serviceDate", sortable: true, flex: 1 },
-    // { headerName: "Service Remarks", field: "serviceRemarks", sortable: true, flex: 1 },
-    // { headerName: "Ref No", field: "refNo", sortable: true, flex: 1 },
-    { headerName: "Remarks", field: "remarks", sortable: true, flex: 1 },
+    { headerName: "Date", field: "serviceDate", sortable: true, flex: 1 },
+    { headerName: "Voucher No", field: "refNo", sortable: true, flex: 1, tooltipField: "refNo"},
+    { headerName: "Location", field: "locationName", sortable: true, flex: 1, tooltipField: "locationName" },
+    { headerName: "Mother Vessel", field: "motherVessel", sortable: true, flex: 1, tooltipField: "motherVessel" },
+    { headerName: "Daughter Vessel", field: "vesselName", sortable: true, flex: 1, tooltipField: "vesselName" },
+    { headerName: "Tug Name", field: "tugName", sortable: true, flex: 1, tooltipField: "tugName" },
+    { headerName: "Type of Service", field: "serviceRemarks", sortable: true, flex: 1, tooltipField: "serviceRemarks" },
+    { headerName: "Remarks", field: "remarks", sortable: true, flex: 1, tooltipField: "remarks" },
     {
       headerName: "Actions",
       field: "actions",
@@ -80,36 +84,6 @@ const onGridReady = (params) => {
    {/* The Loader will only be visible when the 'loading' state is true */}
    <Loader show={loading} />
     <Box className="p-6">
-    {/* <Box className="flex justify-between items-center mb-4">
-        <TextField
-          size="small"
-          placeholder="Search a product"
-          value={search}
-          onChange={(e) => handleSearch(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <FaSearch className="text-gray-500" />
-              </InputAdornment>
-            ),
-          }}
-          className="w-1/3"
-        />
-
-        <Box className="flex gap-2">
-          <TextField select size="small" label="Filter by" className="w-40">
-            <MenuItem value="all">All</MenuItem>
-            <MenuItem value="available">Available</MenuItem>
-            <MenuItem value="sold">Sold</MenuItem>
-          </TextField>
-
-          <TextField select size="small" label="Sort by" className="w-40">
-            <MenuItem value="name">Name</MenuItem>
-            <MenuItem value="gross">Gross</MenuItem>
-            <MenuItem value="expire">Expire Date</MenuItem>
-          </TextField>
-        </Box>
-        </Box> */}
       <DataTable
         rowData={data}
         sortable={true}
