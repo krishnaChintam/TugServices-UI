@@ -69,6 +69,7 @@ export default function TugServices() {
     createdBy: "",
     createdDate: null,
     motherVessel: null,
+    tugName: ''
   });
 
   const patchResponseData = (res) => {
@@ -183,10 +184,9 @@ export default function TugServices() {
       editedBy: form?.serviceId ? userData?.username : "",
       editedDate: form?.serviceId ? new Date().toISOString() : null,
       createdBy: form?.serviceId ? form?.createdBy : userData?.username,
-      createdDate: form?.serviceId
-        ? form?.createdDate
-        : new Date().toISOString(),
+      createdDate: form?.serviceId ? form?.createdDate : new Date().toISOString(),
       motherVessel: form.motherVessel,
+      tugName: form?.serviceId ? form?.tugName : userData?.tugName
     };
   };
 
@@ -212,13 +212,7 @@ export default function TugServices() {
   };
 
   const handleSave = async () => {
-    // if (!validateForm()) {
-    //   toast.error("Please fill in all mandatory fields.");
-    //   return;
-    // }
-
     const payload = buildPayload();
-    console.log(payload);
     if (!validateForm()) {
       toast.error("Please fill in all mandatory fields.");
       return;
@@ -277,6 +271,7 @@ export default function TugServices() {
       locationName: "",
       vesselName: "",
       motherVessel: null,
+      tugName: ""
     });
     setActivities(defaultActivitiesList);
     setSelectedLocation("");
@@ -477,7 +472,7 @@ export default function TugServices() {
                         <em>None</em>
                       </MenuItem>
                       {vessels.map((item) => (
-                        <MenuItem key={item.vesselId} value={item.vesselName}>
+                        <MenuItem key={item.vesselName} value={item.vesselName}>
                           {item.vesselName}
                         </MenuItem>
                       ))}

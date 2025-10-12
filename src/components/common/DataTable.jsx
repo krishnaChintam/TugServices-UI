@@ -1,5 +1,9 @@
-import React from 'react'
-import { AgGridReact } from 'ag-grid-react'
+import React,{ useRef } from 'react';
+import { AgGridReact } from 'ag-grid-react';
+import { saveAs } from "file-saver";
+import * as XLSX from "xlsx";
+import { Button } from "@mui/material";
+import { FaFileExcel } from "react-icons/fa";
 
 const DataTable = ({
   columnDefs = [],
@@ -10,15 +14,43 @@ const DataTable = ({
   sortable = false,
   filter = false
 }) => {
+  const gridRef = useRef();
   const defaultColDef = {
     sortable: sortable,
     filter: filter,
     resizable: true,
   }
 
+  const exportToExcel = () => {
+    const rowData = [];
+    gridRef.current.api.forEachNode((node) => rowData.push(node.data));
+
+    const worksheet = XLSX.utils.json_to_sheet(rowData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Data");
+
+    const excelBuffer = XLSX.write(workbook, {
+      bookType: "xlsx",
+      type: "array",
+    });
+    const blob = new Blob([excelBuffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    saveAs(blob, "GridData.xlsx");
+  };
+
   return (
     <div className="ag-theme-quartz" style={{ width: '100%', height }}>
+      <div className="mb-2 flex justify-end">
+        <Button
+          variant="contained"
+          size="small"
+          onClick={exportToExcel}
+          className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+        > Export Data </Button>
+      </div>
       <AgGridReact
+       ref={gridRef}
         columnDefs={columnDefs}
         rowData={rowData}
         defaultColDef={defaultColDef}

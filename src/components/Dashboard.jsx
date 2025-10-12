@@ -1,7 +1,7 @@
 import React, { useState,useEffect } from "react";
 import { FaEdit } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import { Box, TextField, MenuItem, IconButton, InputAdornment } from "@mui/material";
+import { Box, IconButton, Button } from "@mui/material";
 import DataTable from "./common/DataTable";
 import {tugService} from "../api/apiServices";
 import Loader from "@/components/Loader.jsx";
@@ -19,7 +19,6 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      // http://localhost:8080/tug-services/getByUsername/user
       const url = userData?.role === 'Admin' ? TUG_SERVICES.GET_ALL_SERVICES : `${TUG_SERVICES?.GET_SERVICE_BY_USERNAME}/${userData?.username}`
       const response = await tugService.getAllServices(url);
       setLoading(false);
@@ -57,7 +56,7 @@ const onGridReady = (params) => {
   const columns = [
     { headerName: "Date", field: "serviceDate", sortable: true, flex: 1 },
     { headerName: "Voucher No", field: "refNo", sortable: true, flex: 1 },
-    { headerName: "Location", field: "location", sortable: true, flex: 1 },
+    { headerName: "Location", field: "locationName", sortable: true, flex: 1 },
     { headerName: "Mother Vessel", field: "motherVessel", sortable: true, flex: 1 },
     { headerName: "Doughter Vessel", field: "vesselName", sortable: true, flex: 1 },
     { headerName: "Tug Name", field: "tugName", sortable: true, flex: 1 },
@@ -80,36 +79,6 @@ const onGridReady = (params) => {
    {/* The Loader will only be visible when the 'loading' state is true */}
    <Loader show={loading} />
     <Box className="p-6">
-    {/* <Box className="flex justify-between items-center mb-4">
-        <TextField
-          size="small"
-          placeholder="Search a product"
-          value={search}
-          onChange={(e) => handleSearch(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <FaSearch className="text-gray-500" />
-              </InputAdornment>
-            ),
-          }}
-          className="w-1/3"
-        />
-
-        <Box className="flex gap-2">
-          <TextField select size="small" label="Filter by" className="w-40">
-            <MenuItem value="all">All</MenuItem>
-            <MenuItem value="available">Available</MenuItem>
-            <MenuItem value="sold">Sold</MenuItem>
-          </TextField>
-
-          <TextField select size="small" label="Sort by" className="w-40">
-            <MenuItem value="name">Name</MenuItem>
-            <MenuItem value="gross">Gross</MenuItem>
-            <MenuItem value="expire">Expire Date</MenuItem>
-          </TextField>
-        </Box>
-        </Box> */}
       <DataTable
         rowData={data}
         sortable={true}
