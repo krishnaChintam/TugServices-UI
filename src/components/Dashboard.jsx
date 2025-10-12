@@ -6,6 +6,7 @@ import DataTable from "./common/DataTable";
 import {tugService} from "../api/apiServices";
 import Loader from "@/components/Loader.jsx";
 import { TUG_SERVICES } from '../api/apiConfig.js';
+import CommonServices from "./common/commonService";
 
 const Dashboard = () => {
   const [search, setSearch] = useState("");
@@ -20,7 +21,11 @@ const Dashboard = () => {
     const fetchData = async () => {
       setLoading(true);
       const url = userData?.role === 'Admin' ? TUG_SERVICES.GET_ALL_SERVICES : `${TUG_SERVICES?.GET_SERVICE_BY_USERNAME}/${userData?.username}`
-      const response = await tugService.getAllServices(url);
+      let response = await tugService.getAllServices(url);
+      response?.forEach(item => {
+        item.serviceDate = CommonServices.formatDate(item.serviceDate);
+      });
+      console.log(response)
       setLoading(false);
       setData(response);
     };
@@ -55,13 +60,13 @@ const onGridReady = (params) => {
   // Quick stats data
   const columns = [
     { headerName: "Date", field: "serviceDate", sortable: true, flex: 1 },
-    { headerName: "Voucher No", field: "refNo", sortable: true, flex: 1 },
-    { headerName: "Location", field: "locationName", sortable: true, flex: 1 },
-    { headerName: "Mother Vessel", field: "motherVessel", sortable: true, flex: 1 },
-    { headerName: "Doughter Vessel", field: "vesselName", sortable: true, flex: 1 },
-    { headerName: "Tug Name", field: "tugName", sortable: true, flex: 1 },
-    { headerName: "Type of Service", field: "serviceRemarks", sortable: true, flex: 1 },
-    { headerName: "Remarks", field: "remarks", sortable: true, flex: 1 },
+    { headerName: "Voucher No", field: "refNo", sortable: true, flex: 1, tooltipField: "refNo"},
+    { headerName: "Location", field: "locationName", sortable: true, flex: 1, tooltipField: "locationName" },
+    { headerName: "Mother Vessel", field: "motherVessel", sortable: true, flex: 1, tooltipField: "motherVessel" },
+    { headerName: "Daughter Vessel", field: "vesselName", sortable: true, flex: 1, tooltipField: "vesselName" },
+    { headerName: "Tug Name", field: "tugName", sortable: true, flex: 1, tooltipField: "tugName" },
+    { headerName: "Type of Service", field: "serviceRemarks", sortable: true, flex: 1, tooltipField: "serviceRemarks" },
+    { headerName: "Remarks", field: "remarks", sortable: true, flex: 1, tooltipField: "remarks" },
     {
       headerName: "Actions",
       field: "actions",
