@@ -34,6 +34,7 @@ export default function TugServices() {
   const { id } = useParams();
   const [locations, setLocations] = useState([]);
   const [vessels, setVessels] = useState([]);
+  const [motherVessels, setMotherVessels] = useState([]);
   const [typeOfServicesList, setTypeOfServicesList] = useState([]);
   const [defaultFormData, setDefaultFormData] = useState(null);
   const [selectedVessel, setSelectedVessel] = useState("");
@@ -118,7 +119,19 @@ export default function TugServices() {
           typeOfService.getAllTypeOfServices(),
         ]);
       setLocations(locationsData || []);
-      setVessels(vesselsData || []);
+      const vessels = [];
+      const motherVessels = [];
+    
+      vesselsData.forEach((item) => {
+        if (Number(item.isMotherVessel) === 0) {
+          vessels.push(item);
+        } else {
+          motherVessels.push(item);
+        }
+      });
+    
+      setVessels(vessels);
+      setMotherVessels(motherVessels);
       setTypeOfServicesList(typeOfServicesData || []);
       if (id) {
         await fetchSelectedData(id);
@@ -332,7 +345,7 @@ export default function TugServices() {
         draughtForward: vesselData?.dwt,
       });
     } else if (name === "motherVessel") {
-      const motherVesselData = vessels.find((v) => v.vesselName === value);
+      const motherVesselData = motherVessels.find((v) => v.vesselName === value);
       setSelectedMotherVessel({
         motherVessel: motherVesselData?.vesselName,
       });
@@ -471,7 +484,7 @@ export default function TugServices() {
                       <MenuItem value="">
                         <em>None</em>
                       </MenuItem>
-                      {vessels.map((item) => (
+                      {motherVessels.map((item) => (
                         <MenuItem key={item.vesselName} value={item.vesselName}>
                           {item.vesselName}
                         </MenuItem>
