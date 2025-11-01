@@ -8,7 +8,7 @@ import { tokenService } from '../api/authService';
 const LoginPage = lazy(() => import('../pages/login/login'));
 const Dashboard = lazy(() => import('../components/Dashboard'));
 const TugServices = lazy(()=> import ('../pages/tugServices/tugServices'));
-
+const UserMaster = lazy(()=> import ('../pages/masterScreens/userMaster/UserMaster'));
 // Loading fallback
 const LoadingFallback = () => <div className="loading">Loading...</div>;
 
@@ -17,6 +17,7 @@ const routeConfig = [
   { path: 'dashboard', element: <Dashboard /> },
   { path: 'tugservices', element: <TugServices /> },
   { path: 'tugservices/:id', element: <TugServices /> },
+  { path: 'user-master', element: <UserMaster /> },
 ];
 
 // Sidebar menu redirects (no pages yet)

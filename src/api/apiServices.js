@@ -137,41 +137,27 @@ export const vesselService = {
   }
 };
 
-// Listing API
-export const listingService = {
-  // Get all listings
-  getAllListings: async () => {
-    try {
-      const response = await axiosInstance.get(LISTING.GET_ALL);
-      return response.data;
-    } catch (error) {
-      throw new Error(`Failed to fetch listings: ${error.message}`);
-    }
-  },
-
-  // Get listing by ID
-  getListingById: async (listingId) => {
-    try {
-      const response = await axiosInstance.get(`${LISTING.GET_BY_ID}/${listingId}`);
-      return response.data;
-    } catch (error) {
-      throw new Error(`Failed to fetch listing: ${error.message}`);
-    }
-  },
-
-  // Create new listing
-  createListing: async (listingData) => {
-    try {
-      const response = await axiosInstance.post(LISTING.CREATE, listingData);
-      return response.data;
-    } catch (error) {
-      throw new Error(`Failed to create listing: ${error.message}`);
-    }
-  }
-};
-
 // Generic service that can handle any endpoint directly
 export const genericDataService = {
+  // Universal method to save data by endpoint
+  saveData: async (endpoint, data) => {
+    try {
+      const response = await axiosInstance.post(endpoint, data);
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to save data: ${error.message}`);
+    }
+  },
+
+  // Universal method to update data by endpoint
+  updateData: async (endpoint, id, data) => {
+    try {
+      const response = await axiosInstance.put(`${endpoint}/${id}`, data);
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to update data: ${error.message}`);
+    }
+  },
   // Universal method to get all data by endpoint
   getAllData: async (endpoint) => {
     try {
@@ -216,6 +202,5 @@ export default {
   tugService,
   locationService,
   vesselService,
-  listingService,
   genericDataService
 };
