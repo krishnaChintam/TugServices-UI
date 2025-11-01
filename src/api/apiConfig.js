@@ -59,15 +59,12 @@ export const API_ENDPOINTS = {
     CHANGE_PASSWORD: '/ChangePassword'
   },
 
-  // User management endpoints
-  USER: {
-    PROFILE: '/User/Profile',
-    UPDATE_PROFILE: '/User/UpdateProfile',
-    DELETE_ACCOUNT: '/User/DeleteAccount',
-    UPLOAD_AVATAR: '/User/UploadAvatar',
-    GET_USERS: '/User/GetUsers',
-    GET_USER_BY_ID: '/User/GetUserById',
-    UPDATE_USER_STATUS: '/User/UpdateStatus'
+  // User Master endpoints
+  USER_MASTER: {
+    GET_ALL: '/users/all',
+    GET_BY_ID: '/users/getById',
+    CREATE: '/users/save',
+    UPDATE: '/users/update',
   },
 
   // Tug services endpoints
@@ -180,7 +177,7 @@ export const { MAIN_API, AUTH_SERVICE, USER_SERVICE, PAYMENT_SERVICE, NOTIFICATI
 // Export commonly used endpoints (from apiConstants.js)
 export const {
   AUTH,
-  USER,
+  USER_MASTER,
   TUG_SERVICES,
   LOCATIONS,
   VESSELS,
@@ -220,11 +217,7 @@ export const API_URLS = {
   LOGOUT: API_HELPERS.getAuthUrl(AUTH.LOGOUT),
   REGISTER: API_HELPERS.getAuthUrl(AUTH.REGISTER),
   REFRESH_TOKEN: API_HELPERS.getAuthUrl(AUTH.REFRESH_TOKEN),
-  
-  // User URLs
-  USER_PROFILE: API_HELPERS.getUserUrl(USER.PROFILE),
-  UPDATE_PROFILE: API_HELPERS.getUserUrl(USER.UPDATE_PROFILE),
-  
+ 
   // Tug Services URLs
   GET_ALL_SERVICES: API_HELPERS.getMainApiUrl(TUG_SERVICES.GET_ALL_SERVICES),
   CREATE_SERVICE: API_HELPERS.getMainApiUrl(TUG_SERVICES.CREATE_SERVICE),
@@ -251,7 +244,7 @@ export default {
   PAYMENT_SERVICE,
   NOTIFICATION_SERVICE,
   AUTH,
-  USER,
+  USER_MASTER,
   TUG_SERVICES,
   LOCATIONS,
   VESSELS,

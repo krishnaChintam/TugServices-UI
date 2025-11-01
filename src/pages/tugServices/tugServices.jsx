@@ -34,6 +34,7 @@ export default function TugServices() {
   const { id } = useParams();
   const [locations, setLocations] = useState([]);
   const [vessels, setVessels] = useState([]);
+  const [motherVessels, setMotherVessels] = useState([]);
   const [typeOfServicesList, setTypeOfServicesList] = useState([]);
   const [defaultFormData, setDefaultFormData] = useState(null);
   const [selectedVessel, setSelectedVessel] = useState("");
@@ -118,7 +119,19 @@ export default function TugServices() {
           typeOfService.getAllTypeOfServices(),
         ]);
       setLocations(locationsData || []);
-      setVessels(vesselsData || []);
+      const vessels = [];
+      const motherVessels = [];
+    
+      vesselsData.forEach((item) => {
+        if (Number(item.isMotherVessel) === 0) {
+          vessels.push(item);
+        } else {
+          motherVessels.push(item);
+        }
+      });
+    
+      setVessels(vessels);
+      setMotherVessels(motherVessels);
       setTypeOfServicesList(typeOfServicesData || []);
       if (id) {
         await fetchSelectedData(id);
@@ -213,6 +226,7 @@ export default function TugServices() {
 
   const handleSave = async () => {
     const payload = buildPayload();
+    console.log(payload)
     if (!validateForm()) {
       toast.error("Please fill in all mandatory fields.");
       return;
@@ -332,7 +346,7 @@ export default function TugServices() {
         draughtForward: vesselData?.dwt,
       });
     } else if (name === "motherVessel") {
-      const motherVesselData = vessels.find((v) => v.vesselName === value);
+      const motherVesselData = motherVessels.find((v) => v.vesselName === value);
       setSelectedMotherVessel({
         motherVessel: motherVesselData?.vesselName,
       });
@@ -367,6 +381,15 @@ export default function TugServices() {
       setErrors({ ...errors, vesselName: false });
     } else {
       setSelectedVessel(newValue);
+      // Update form state
+      setForm({
+        ...form,
+        vesselId: newValue?.vesselId,
+        imoCode: newValue?.imoCode,
+        draughtAft: newValue?.arrDraft,
+        draughtForward: newValue?.dwt,
+        vesselType: newValue?.vesselType
+      });
       setErrors({ ...errors, vesselName: false });
     }
   };
@@ -471,7 +494,7 @@ export default function TugServices() {
                       <MenuItem value="">
                         <em>None</em>
                       </MenuItem>
-                      {vessels.map((item) => (
+                      {motherVessels.map((item) => (
                         <MenuItem key={item.vesselName} value={item.vesselName}>
                           {item.vesselName}
                         </MenuItem>
@@ -481,19 +504,51 @@ export default function TugServices() {
                 </div>
               </div>
               {/* 2nd Row */}
+              
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="grid grid-cols-2 gap-3">
-                  {/* IMO No */}
+              <div className="grid grid-cols-2 gap-3">
+                    {/* IMO No */}
+                    <TextField
+                      size="small"
+                      fullWidth
+                      label="IMO No"
+                      name="imoCode"
+                      value={form.imoCode}
+                      onChange={handleChange}
+                    />
+                    {/* Length Overall */}
                   <TextField
                     size="small"
                     fullWidth
-                    label="IMO No"
-                    name="imoCode"
-                    value={form.imoCode}
+                    label="Length Overall (M)"
+                    name="lengthOverall"
+                    value={form.lengthOverall}
                     onChange={handleChange}
                   />
-
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                {/* Draught Fwd */}
                   <TextField
+                    size="small"
+                    fullWidth
+                    label="Draught Fwd (M)"
+                    name="draughtForward"
+                    value={form.draughtForward}
+                    onChange={handleChange}
+                  />
+                  {/* Draught Aft */}
+                  <TextField
+                    size="small"
+                    fullWidth
+                    label="Draught Aft (M)"
+                    name="draughtAft"
+                    value={form.draughtAft}
+                    onChange={handleChange}
+                  />
+                </div>
+                <div className="grid grid-cols-1 gap-3">
+                   {/* Type Of Vesssel */}
+                   <TextField
                     size="small"
                     fullWidth
                     label="Type of Vessel"
@@ -502,9 +557,12 @@ export default function TugServices() {
                     onChange={handleChange}
                   />
                 </div>
-                {/* Location */}
-                <div className="grid grid-cols-1 gap-3">
-                  <FormControl
+              </div>
+              {/* 3rd Row */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
+                <div className="grid grid-cols-2 gap-3">
+                 {/* Location */}
+                 <FormControl
                     fullWidth
                     size="small"
                     variant="outlined"
@@ -528,37 +586,7 @@ export default function TugServices() {
                       ))}
                     </Select>
                   </FormControl>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <TextField
-                    size="small"
-                    fullWidth
-                    label="Draught Fwd (M)"
-                    name="draughtForward"
-                    value={form.draughtForward}
-                    onChange={handleChange}
-                  />
-                  <TextField
-                    size="small"
-                    fullWidth
-                    label="Draught Aft (M)"
-                    name="draughtAft"
-                    value={form.draughtAft}
-                    onChange={handleChange}
-                  />
-                </div>
-              </div>
-              {/* 3rd Row */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <TextField
-                    size="small"
-                    fullWidth
-                    label="Length Overall (M)"
-                    name="lengthOverall"
-                    value={form.lengthOverall}
-                    onChange={handleChange}
-                  />
+                  {/* Type of Service */}
                   <FormControl
                     fullWidth
                     size="small"
@@ -589,6 +617,7 @@ export default function TugServices() {
                     </Select>
                   </FormControl>
                 </div>
+                {/* Service Remarks */}
                 <TextField
                   size="small"
                   fullWidth
@@ -599,8 +628,8 @@ export default function TugServices() {
                   value={form.serviceRemarks}
                   onChange={handleChange}
                 />
-
                 <div className="grid grid-cols-1 gap-3">
+                {/* Remarks */}
                   <TextField
                     size="small"
                     fullWidth
@@ -621,7 +650,7 @@ export default function TugServices() {
                 padding: "8px",
                 display: "flex",
                 flexDirection: "column",
-                height: 300,
+                height: 500, // It defines the Table Height 
               }}
             >
               {/* Scrollable Table */}
@@ -711,7 +740,6 @@ export default function TugServices() {
                   </TableBody>
                 </Table>
               </div>
-
               <div style={{ paddingTop: "8px", borderTop: "1px solid #eee" }}>
                 <div class="flex justify-between items-center">
                   <Button variant="outlined" size="small" onClick={addRow}>
@@ -724,6 +752,7 @@ export default function TugServices() {
               </div>
             </CardContent>
           </Card>
+          {/* Buttons */}
           <div className="mt-4 flex gap-2 justify-center">
             {form?.serviceId && (
               <Button

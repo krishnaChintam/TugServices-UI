@@ -4,6 +4,7 @@ import {
   FaServicestack,
   FaSignOutAlt,
   FaChevronLeft,
+  FaUsersCog
 } from 'react-icons/fa';
 import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
@@ -26,8 +27,9 @@ const Sidebar = ({ sidebarOpen, toggleSidebar }) => {
 
   // Menu items
   const menuItems = [
-    { icon: <FaChartBar />, text: 'Dashboard', active: true, path: '/dashboard' },
-    { icon: <FaServicestack />, text: 'Tug Services', path: '/tugservices' },
+    { icon: <FaChartBar />, text: 'Dashboard', path: '/dashboard', id: 1 },
+    { icon: <FaServicestack />, text: 'Tug Services', path: '/tugservices', id: 2 },
+    { icon: <FaUsersCog />, text: 'User Master', path: '/user-master', id: 3 },
   ];
 
   const handleMenuClick = (item) => {
@@ -79,7 +81,15 @@ const Sidebar = ({ sidebarOpen, toggleSidebar }) => {
       {/* Navigation Menu */}
       <div className="flex-1 overflow-y-auto py-1">
         <ul>
-          {menuItems.map((item, index) => (
+          {menuItems.map((item, index) => {
+          // 1. Define the condition for hiding the item
+          const shouldHide = item?.id === 3 && userData?.role == 'admin';
+          // 2. Return null (don't render anything) if the item should be hidden
+          if (shouldHide) {
+            return null;
+          }
+          // 3. Otherwise, render the menu item as before
+          return (
             <li key={index} className="mb-0.5">
               <a
                 href="#"
@@ -100,7 +110,8 @@ const Sidebar = ({ sidebarOpen, toggleSidebar }) => {
                 <span className={sidebarOpen ? "" : "hidden"}>{item.text}</span>
               </a>
             </li>
-          ))}
+          );
+        })}
         </ul>
       </div>
 
