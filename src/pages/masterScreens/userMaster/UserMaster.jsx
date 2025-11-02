@@ -286,6 +286,7 @@ const UserCreateForm = () => {
                   value={data.username}
                   onChange={handleChange}
                   error={errors.username}
+                  disabled={data?.id}
                 />
                 <TextField
                   size="small"
