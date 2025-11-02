@@ -40,32 +40,99 @@ const Dashboard = () => {
     response?.forEach((item) => {
       item.serviceDate = CommonServices.formatDate(item.serviceDate);
 
-      item.proceedTiming = item?.activities.find(
+      // Assuming 'item' has an 'activities' array, where each activity object has:
+
+      // Helper function to reformat YYYY-MM-DD to MM-DD-YYYY
+      const reformatDate = (dateString) => {
+        if (!dateString) return null;
+        // activityDate is assumed to be YYYY-MM-DD (e.g., 2025-11-02)
+        const parts = dateString.split("-");
+        if (parts.length === 3) {
+          // Reassemble as MM-DD-YYYY (e.g., 11-02-2025)
+          return `${parts[1]}-${parts[2]}-${parts[0]}`;
+        }
+        return dateString; // Fallback if split fails
+      };
+
+      // --- Find the 'Proceed' Activity ---
+      const proceedActivity = item?.activities.find(
         (data) =>
           data?.description &&
           data.description.toUpperCase().includes("PROCEEDED TO ASSIST")
-      )?.activityTime;
+      );
 
-      item.castOfTiming = item?.activities.find(
+      // --- Find the 'Cast Off' Activity ---
+      const castOffActivity = item?.activities.find(
         (data) => data?.description === "TUG LINE CAST OFF"
-      )?.activityTime;
+      );
 
-      if (item.proceedTiming && item.castOfTiming) {
-        const start = new Date(`1970-01-01T${item.proceedTiming}`);
-        const end = new Date(`1970-01-01T${item.castOfTiming}`);
-        if (end < start) end.setDate(end.getDate() + 1);
-        const diffMs = end - start;
-        const diffHrs = diffMs / (1000 * 60 * 60);
-        const diffMins = diffMs / (1000 * 60);
-        item.totalHours =
-          diffHrs >= 1
-            ? `${diffHrs.toFixed(2)} hr`
-            : `${diffMins.toFixed(2)} min`;
+      // 1. Store the user-requested formatted string (MM-DD-YYYYT...) in item properties
+      item.proceedDateTime =
+        proceedActivity &&
+        proceedActivity.activityDate &&
+        proceedActivity.activityTime
+          ? `${reformatDate(proceedActivity.activityDate)}T${
+              proceedActivity.activityTime
+            }`
+          : null;
+
+      item.castOffDateTime =
+        castOffActivity &&
+        castOffActivity.activityDate &&
+        castOffActivity.activityTime
+          ? `${reformatDate(castOffActivity.activityDate)}T${
+              castOffActivity.activityTime
+            }`
+          : null;
+
+      // 2. Create reliable ISO 8601 strings (YYYY-MM-DDT...) for calculation
+      const proceedDateTimeISO =
+        proceedActivity &&
+        proceedActivity.activityDate &&
+        proceedActivity.activityTime
+          ? `${proceedActivity.activityDate}T${proceedActivity.activityTime}`
+          : null;
+
+      const castOffDateTimeISO =
+        castOffActivity &&
+        castOffActivity.activityDate &&
+        castOffActivity.activityTime
+          ? `${castOffActivity.activityDate}T${castOffActivity.activityTime}`
+          : null;
+
+      // 3. Perform calculation using the reliable ISO strings
+      if (proceedDateTimeISO && castOffDateTimeISO) {
+        // Create Date objects using the reliable YYYY-MM-DDT... format.
+        const start = new Date(proceedDateTimeISO);
+        const end = new Date(castOffDateTimeISO);
+
+        // Check if both dates were parsed successfully
+        if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+          const diffMs = end.getTime() - start.getTime();
+
+          // Ensure end time is after start time (a positive difference)
+          if (diffMs > 0) {
+            const diffHrs = diffMs / (1000 * 60 * 60);
+            const diffMins = diffMs / (1000 * 60);
+
+            // Format the output
+            item.totalHours =
+              diffHrs >= 1
+                ? `${diffHrs.toFixed(2)} hr`
+                : `${diffMins.toFixed(2)} min`;
+          } else {
+            // If difference is zero or negative, set to 00:00 (invalid sequence)
+            item.totalHours = "00:00";
+          }
+        } else {
+          // If Date parsing failed (should be less likely now), set to 00:00
+          item.totalHours = "00:00";
+        }
       } else {
+        // If one of the required activities was not found
         item.totalHours = "00:00";
       }
     });
-
     setData(response);
     setFilteredData(response);
     setLoading(false);
@@ -107,8 +174,8 @@ const Dashboard = () => {
     // 1. Define the mapping from data field name to desired Excel header name
     const columnMapping = {
       serviceDate: "Date",
-      proceedTiming: "Proceed Timing",
-      castOfTiming: "Cast Of Timing",
+      proceedDateTime: "Proceed Timing",
+      castOffDateTime: "Cast Of Timing",
       totalHours: "Total Hours",
       refNo: "Voucher No",
       locationName: "Location",
@@ -150,16 +217,46 @@ const Dashboard = () => {
   };
 
   const columns = [
-    { headerName: "Date", field: "serviceDate", sortable: true, minWidth: 120 },
+    { headerName: "Date", field: "serviceDate", sortable: true, minWidth: 120, maxWidth: 180 },
+    { headerName: "Voucher No", field: "refNo", sortable: true, minWidth: 120, maxWidth: 250 },
+    {
+      headerName: "Location",
+      field: "locationName",
+      sortable: true,
+      minWidth: 120,
+      maxWidth: 250
+    },
+    {
+      headerName: "Mother Vessel",
+      field: "motherVessel",
+      sortable: true,
+      minWidth: 140,
+      maxWidth: 250
+    },
+    {
+      headerName: "Daughter Vessel",
+      field: "vesselName",
+      sortable: true,
+      minWidth: 160,
+      maxWidth: 250
+    },
+    { headerName: "Tug Name", field: "tugName", sortable: true,minWidth: 120, maxWidth: 120 },
+    {
+      headerName: "Type of Service",
+      field: "serviceRemarks",
+      sortable: true,
+      minWidth: 180,
+    },
+    { headerName: "Remarks", field: "remarks", sortable: true, minWidth: 200 },
     {
       headerName: "Proceed Timing",
-      field: "proceedTiming",
+      field: "proceedDateTime",
       sortable: true,
       minWidth: 150,
     },
     {
       headerName: "Cast Of Timing",
-      field: "castOfTiming",
+      field: "castOffDateTime",
       sortable: true,
       minWidth: 150,
     },
@@ -169,33 +266,6 @@ const Dashboard = () => {
       sortable: true,
       minWidth: 130,
     },
-    { headerName: "Voucher No", field: "refNo", sortable: true, minWidth: 140 },
-    {
-      headerName: "Location",
-      field: "locationName",
-      sortable: true,
-      minWidth: 140,
-    },
-    {
-      headerName: "Mother Vessel",
-      field: "motherVessel",
-      sortable: true,
-      minWidth: 160,
-    },
-    {
-      headerName: "Daughter Vessel",
-      field: "vesselName",
-      sortable: true,
-      minWidth: 180,
-    },
-    { headerName: "Tug Name", field: "tugName", sortable: true, minWidth: 130 },
-    {
-      headerName: "Type of Service",
-      field: "serviceRemarks",
-      sortable: true,
-      minWidth: 180,
-    },
-    { headerName: "Remarks", field: "remarks", sortable: true, minWidth: 200 },
     {
       headerName: "Actions",
       field: "actions",
@@ -256,7 +326,7 @@ const Dashboard = () => {
             slotProps={{
               htmlInput: {
                 min: startDate || "",
-                max: currentDate,
+                // max: currentDate,
               },
             }}
           />
