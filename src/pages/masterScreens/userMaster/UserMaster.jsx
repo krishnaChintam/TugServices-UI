@@ -57,7 +57,10 @@ const UserCreateForm = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const response = await genericDataService.getAllData(USER_MASTER.GET_ALL);
+      let response = await genericDataService.getAllData(USER_MASTER.GET_ALL);
+      response?.data?.forEach((item) => {      
+        item.isActiveValue = item.isActive == 1 ? 'True' : 'False';
+      });
       setLoading(false);
       setAllUsersList(response?.data);
     } catch (error) {
@@ -246,7 +249,7 @@ const UserCreateForm = () => {
     { headerName: "Email", field: "email", sortable: true },
     { headerName: "Role", field: "role", sortable: true },
     { headerName: "TugName", field: "tugName", sortable: true },
-    { headerName: "isActive", field: "isActive", sortable: true },
+    { headerName: "isActive", field: "isActiveValue", sortable: true },
     {
       headerName: "Actions",
       field: "actions",
@@ -286,6 +289,7 @@ const UserCreateForm = () => {
                   value={data.username}
                   onChange={handleChange}
                   error={errors.username}
+                  disabled={data?.id}
                 />
                 <TextField
                   size="small"
