@@ -29,7 +29,7 @@ const Sidebar = ({ sidebarOpen, toggleSidebar }) => {
   const menuItems = [
     { icon: <FaChartBar />, text: 'Dashboard', path: '/dashboard', id: 1 },
     { icon: <FaServicestack />, text: 'Tug Services', path: '/tugservices', id: 2 },
-    { icon: <FaUsersCog />, text: 'User Master', path: '/user-master', id: 3 },
+    { icon: <FaUsersCog />, text: 'User', path: '/user-master', id: 3 },
   ];
 
   const handleMenuClick = (item) => {
