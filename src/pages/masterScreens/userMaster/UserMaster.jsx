@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FaEdit, FaTrashAlt } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
+import { FaEdit, FaTrashAlt,FaEye, FaEyeSlash } from "react-icons/fa";
 import {
   Box,
   IconButton,
@@ -12,6 +11,9 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  InputAdornment,
+  FormControlLabel, 
+  Switch
 } from "@mui/material";
 import DataTable from "../../../components/common/DataTable";
 import Loader from "@/components/Loader.jsx";
@@ -27,7 +29,7 @@ const UserCreateForm = () => {
     tugName: "",
     password: "",
     confirmPassword: "",
-    isActive: "",
+    isActive: true,
     createdBy: "",
     createdDate: "",
     editedBy: "",
@@ -39,6 +41,8 @@ const UserCreateForm = () => {
   const [errors, setErrors] = useState({});
   const loginUserData = JSON.parse(localStorage.getItem("userData"));
   const [allUsersList, setAllUsersList] = useState([]);
+  const [showPassword, setShowPassword] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState(false);
 
   const roles = [
     { roleId: 1, roleName: "Admin" },
@@ -78,6 +82,7 @@ const UserCreateForm = () => {
       tugName: "",
       password: "",
       confirmPassword: "",
+      isActive: true
     });
   };
 
@@ -204,6 +209,15 @@ const UserCreateForm = () => {
     },
   ];
 
+  const handleClickShowPassword = (type) => {
+    // Toggle the state
+    if(type === "password"){
+      setShowPassword((prev) => !prev);
+    }else{
+      setConfirmPassword((prev)=> !prev);
+    }
+  };
+
   return (
     <>
       <Loader show={loading} />
@@ -272,25 +286,74 @@ const UserCreateForm = () => {
                     fullWidth
                     label="Password *"
                     name="password"
+                    type={showPassword ? "text" : "password"}
                     value={data.password}
                     onChange={handleChange}
+                    slotProps={{
+                      input: {
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <IconButton
+                              className="focus:outline-none active:outline-none active:ring-0"
+                              aria-label="toggle password visibility"
+                              onClick={() =>
+                                handleClickShowPassword("password")
+                              }
+                              size="m"
+                              // onMouseDown={handleMouseDownPassword}
+                              edge="end"
+                            >
+                              {showPassword ? <FaEyeSlash /> : <FaEye />}
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                      },
+                    }}
                   />
                   <TextField
                     size="small"
                     fullWidth
                     label="Confirm Password *"
                     name="confirmPassword"
+                    type={confirmPassword ? "text" : "password"}
                     value={data.confirmPassword}
                     onChange={handleChange}
+                    slotProps={{
+                      input: {
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <IconButton
+                              className="focus:outline-none active:outline-none active:ring-0"
+                              aria-label="toggle confirmPassword visibility"
+                              onClick={() =>
+                                handleClickShowPassword("confirmPassword")
+                              }
+                              size="m"
+                              // onMouseDown={handleMouseDownPassword}
+                              edge="end"
+                            >
+                              {confirmPassword ? <FaEyeSlash /> : <FaEye />}
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                      },
+                    }}
                   />
                 </div>
-                <TextField
-                  size="small"
-                  fullWidth
-                  label="isActive"
-                  name="isActive"
-                  value={data.isActive}
-                  onChange={handleChange}
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={data.isActive}
+                      onChange={(e) =>
+                        handleChange({
+                          target: { name: "isActive", value: e.target.checked },
+                        })
+                      }
+                      name="isActive"
+                      color="primary"
+                    />
+                  }
+                  label="Active"
                 />
               </div>
               <div className="flex justify-center gap-2 mt-4">
@@ -318,6 +381,7 @@ const UserCreateForm = () => {
                   sortable={true}
                   filter={true}
                   columnDefs={columns}
+                  height="60vh"
                   // quickFilterValue={""}
                 />
               </div>
