@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FaEdit, FaTrashAlt } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
+import { FaEdit, FaTrashAlt,FaEye, FaEyeSlash } from "react-icons/fa";
 import {
   Box,
   IconButton,
@@ -12,10 +11,14 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  InputAdornment,
+  FormControlLabel, 
+  Switch
 } from "@mui/material";
+import { toast } from "../../../components/common/toster.jsx";
+import ToastContainer from "../../../components/common/toster.jsx";
 import DataTable from "../../../components/common/DataTable";
 import Loader from "@/components/Loader.jsx";
-import ToastContainer from "../../../components/common/toster.jsx";
 import { USER_MASTER } from "../../../api/apiConfig";
 import { genericDataService } from "../../../api/apiServices.js";
 
@@ -25,24 +28,26 @@ const UserCreateForm = () => {
     email: "",
     role: "",
     tugName: "",
-    password: "",
+    passwordHash: "",
     confirmPassword: "",
-    isActive: "",
+    isActive: 1,
     createdBy: "",
     createdDate: "",
     editedBy: "",
     editedDate: "",
+    id: null,
   });
-  //   const [roles, setRoles] = useState([]);
-  //   const [selectedRole, setSelectedRole] = useState("");
+  const [selectedRole, setSelectedRole] = useState("");
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const loginUserData = JSON.parse(localStorage.getItem("userData"));
   const [allUsersList, setAllUsersList] = useState([]);
+  const [showPassword, setShowPassword] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState(false);
 
   const roles = [
-    { roleId: 1, roleName: "Admin" },
-    { roleId: 2, roleName: "User" },
+    { roleId: 1, roleName: "Admin", value: "Admin" },
+    { roleId: 2, roleName: "user", value: 'user' },
   ];
 
   useEffect(() => {
@@ -54,7 +59,6 @@ const UserCreateForm = () => {
       setLoading(true);
       const response = await genericDataService.getAllData(USER_MASTER.GET_ALL);
       setLoading(false);
-      console.log(response?.data);
       setAllUsersList(response?.data);
     } catch (error) {
       setLoading(false);
@@ -62,12 +66,28 @@ const UserCreateForm = () => {
   };
 
   const handleRoleChange = (event) => {
-    // setSelectedRole(event.target.value);
+    setSelectedRole(event.target.value);
     setData({ ...data, [event.target.name]: event.target.value });
+    setErrors({...errors, [event.target.name]: false});
   };
 
   const handleChange = (event) => {
-    setData({ ...data, [event.target.name]: event.target.value });
+    const { name, value } = event.target;
+    // Update data first
+    const updatedData = { ...data, [name]: value };
+    setData(updatedData);
+    // Copy existing errors
+    let updatedErrors = { ...errors, [name]: false };
+    // Check if confirmPassword is being changed
+    if (name === "confirmPassword" || name === "passwordHash") {
+      if (updatedData.confirmPassword && updatedData.passwordHash !== updatedData.confirmPassword) {
+        updatedErrors.confirmPassword = true;
+      } else {
+        updatedErrors.confirmPassword = false;
+      }
+    }
+    // Update errors state
+    setErrors(updatedErrors);
   };
 
   const handleReset = () => {
@@ -76,9 +96,13 @@ const UserCreateForm = () => {
       email: "",
       role: "",
       tugName: "",
-      password: "",
+      passwordHash: "",
       confirmPassword: "",
+      isActive: 1,
+      id: null
     });
+    setSelectedRole("");
+    setErrors({});
   };
 
   const validateForm = () => {
@@ -88,35 +112,59 @@ const UserCreateForm = () => {
       tempErrors.username = true;
       isValid = false;
     }
-    if (!data.email) {
-      tempErrors.email = true;
-      isValid = false;
-    }
-    if (!data.role) {
-      tempErrors.role = true;
-      isValid = false;
-    }
-    if (!data.tugName) {
-      tempErrors.tugName = true;
-      isValid = false;
-    }
-    if (!data.password) {
-      tempErrors.password = true;
+    // if (!data.email) {
+    //   tempErrors.email = true;
+    //   isValid = false;
+    // }
+    // if (!data.role) {
+    //   tempErrors.role = true;
+    //   isValid = false;
+    // }
+    // if (!data.tugName) {
+    //   tempErrors.tugName = true;
+    //   isValid = false;
+    // }
+    if (!data.passwordHash) {
+      tempErrors.passwordHash = true;
       isValid = false;
     }
     if (!data.confirmPassword) {
       tempErrors.confirmPassword = true;
       isValid = false;
     }
-    if (!data.isActive) {
-      tempErrors.isActive = true;
-      isValid = false;
-    }
+    // if (!data.isActive) {
+    //   tempErrors.isActive = true;
+    //   isValid = false;
+    // }
     setErrors(tempErrors);
     return isValid;
   };
 
-  const handleSaveOrUpdate = async (props) => {
+  const handleDeactivate = async (props) => {
+    try {
+      if (props?.id) {
+        setLoading(true);
+        // Make sure response is properly declared
+        const response = await genericDataService.updateData(
+          USER_MASTER.UPDATE,
+          props.id,
+          { ...props, isActive: 0 } // ensure you're marking inactive
+        );
+        toast.success("User deactivated successfully");
+        fetchData(); // usually fine to trigger reload before unsetting loading
+      } else {
+        toast.error("Invalid user data");
+      }
+    } catch (error) {
+      console.error("Error in deactivate:", error);
+      toast.error("Failed to deactivate user.");
+    } finally {
+      // Always stop loading — even if error occurs
+      setLoading(false);
+    }
+  };
+
+  const handleSaveOrUpdate = async () => {
     if (!validateForm()) {
       toast.error("Please fill in all mandatory fields.");
       return;
@@ -126,27 +174,31 @@ const UserCreateForm = () => {
     data.createdDate = data?.id ? data?.createdDate : new Date().toISOString();
     data.editedBy = data?.id ? loginUserData?.username : "";
     data.editedDate = data?.id ? new Date().toISOString() : null;
-    console.log(data);
-    setLoading(true);
     try {
       let response = null;
       if (data?.id) {
+        setLoading(true);
         response = await genericDataService.updateData(
           USER_MASTER.UPDATE,
+          data?.id,
           data
         );
         toast.success("User Updated successfully");
         setLoading(false);
+        handleReset();
+        fetchData();
       } else {
+        setLoading(true);
         response = await genericDataService.saveData(USER_MASTER.CREATE, data);
         toast.success("User created successfully");
         setLoading(false);
+        handleReset();
+        fetchData();
       }
-      console.log(response);
     } catch (error) {
+      setLoading(false);
       console.error("Error in handleSaveOrUpdate:", error);
       toast.error("Failed to create/Update user.");
-      setLoading(false);
     }
   };
 
@@ -175,16 +227,18 @@ const UserCreateForm = () => {
   };
 
   const onRowClicked = (props,type) => {
-    let data = props?.data;
-    if(type === 'edit'){
-    if (data?.id) {
-      setData(data);
+    let payload = props?.data;
+    if (type === "edit") {
+      if (payload?.id) {
+        setData(payload);
+        setSelectedRole(payload?.role);
+      }
+    } else {
+      if (window.confirm("Are you sure you want to deactivate this record?")) {
+        payload.isActive = 0;
+        handleDeactivate(payload)
+      }
     }
-}else{
-    window.alert('Confirmation to delete');
-    data.isActive = 0; // 0 indicates InActive
-    handleSaveOrUpdate(data)
-}
   };
 
   const columns = [
@@ -204,6 +258,15 @@ const UserCreateForm = () => {
     },
   ];
 
+  const handleClickShowPassword = (type) => {
+    // Toggle the state
+    if(type === "passwordHash"){
+      setShowPassword((prev) => !prev);
+    }else{
+      setConfirmPassword((prev)=> !prev);
+    }
+  };
+
   return (
     <>
       <Loader show={loading} />
@@ -222,11 +285,12 @@ const UserCreateForm = () => {
                   name="username"
                   value={data.username}
                   onChange={handleChange}
+                  error={errors.username}
                 />
                 <TextField
                   size="small"
                   fullWidth
-                  label="Email *"
+                  label="Email"
                   name="email"
                   value={data.email}
                   onChange={handleChange}
@@ -235,21 +299,21 @@ const UserCreateForm = () => {
                   fullWidth
                   size="small"
                   variant="outlined"
-                  error={errors.role}
+                  // error={errors.role}
                 >
-                  <InputLabel id="role-label">Role *</InputLabel>
+                  <InputLabel id="role-label">Role</InputLabel>
                   <Select
                     labelId="role-label"
-                    label="Role *"
+                    label="Role"
                     name="role"
-                    value={data.role || ""}
+                    value={selectedRole}
                     onChange={handleRoleChange}
                   >
                     <MenuItem value="">
                       <em>None</em>
                     </MenuItem>
                     {roles.map((item) => (
-                      <MenuItem key={item.roleId} value={item.roleId}>
+                      <MenuItem key={item.roleId} value={item.value}>
                         {item.roleName}
                       </MenuItem>
                     ))}
@@ -261,7 +325,7 @@ const UserCreateForm = () => {
                 <TextField
                   size="small"
                   fullWidth
-                  label="TugName *"
+                  label="TugName"
                   name="tugName"
                   value={data.tugName}
                   onChange={handleChange}
@@ -271,26 +335,77 @@ const UserCreateForm = () => {
                     size="small"
                     fullWidth
                     label="Password *"
-                    name="password"
-                    value={data.password}
+                    name="passwordHash"
+                    type={showPassword ? "text" : "password"}
+                    value={data.passwordHash}
                     onChange={handleChange}
+                    error={errors.passwordHash}
+                    slotProps={{
+                      input: {
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <IconButton
+                              className="focus:outline-none active:outline-none active:ring-0"
+                              aria-label="toggle password visibility"
+                              onClick={() =>
+                                handleClickShowPassword("passwordHash")
+                              }
+                              size="m"
+                              // onMouseDown={handleMouseDownPassword}
+                              edge="end"
+                            >
+                              {showPassword ? <FaEyeSlash /> : <FaEye />}
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                      },
+                    }}
                   />
                   <TextField
                     size="small"
                     fullWidth
                     label="Confirm Password *"
                     name="confirmPassword"
+                    type={confirmPassword ? "text" : "password"}
                     value={data.confirmPassword}
                     onChange={handleChange}
+                    error={errors.confirmPassword}
+                    slotProps={{
+                      input: {
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <IconButton
+                              className="focus:outline-none active:outline-none active:ring-0"
+                              aria-label="toggle confirmPassword visibility"
+                              onClick={() =>
+                                handleClickShowPassword("confirmPassword")
+                              }
+                              size="m"
+                              // onMouseDown={handleMouseDownPassword}
+                              edge="end"
+                            >
+                              {confirmPassword ? <FaEyeSlash /> : <FaEye />}
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                      },
+                    }}
                   />
                 </div>
-                <TextField
-                  size="small"
-                  fullWidth
-                  label="isActive"
-                  name="isActive"
-                  value={data.isActive}
-                  onChange={handleChange}
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={data.isActive == 1 ? true : false || data.isActive}
+                      onChange={(e) =>
+                        handleChange({
+                          target: { name: "isActive", value: Number(e.target.checked) },
+                        })
+                      }
+                      name="isActive"
+                      color="primary"
+                    />
+                  }
+                  label="Active"
                 />
               </div>
               <div className="flex justify-center gap-2 mt-4">
@@ -318,6 +433,7 @@ const UserCreateForm = () => {
                   sortable={true}
                   filter={true}
                   columnDefs={columns}
+                  height="60vh"
                   // quickFilterValue={""}
                 />
               </div>
