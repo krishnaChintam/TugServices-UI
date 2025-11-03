@@ -4,16 +4,16 @@ import {
   FaServicestack,
   FaSignOutAlt,
   FaChevronLeft,
-  FaUsersCog
-} from 'react-icons/fa';
-import PropTypes from 'prop-types';
-import { useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+  FaUsersCog,
+} from "react-icons/fa";
+import PropTypes from "prop-types";
+import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 
 const Sidebar = ({ sidebarOpen, toggleSidebar }) => {
   const navigate = useNavigate();
-  const [username, setUsername] = useState('User');
-  const userData = JSON.parse(localStorage.getItem('userData'))
+  const [username, setUsername] = useState("User");
+  const userData = JSON.parse(localStorage.getItem("userData"));
 
   useEffect(() => {
     try {
@@ -21,15 +21,20 @@ const Sidebar = ({ sidebarOpen, toggleSidebar }) => {
         setUsername(userData.username);
       }
     } catch (error) {
-      console.error('Error parsing user data from localStorage:', error);
+      console.error("Error parsing user data from localStorage:", error);
     }
   }, []);
 
   // Menu items
   const menuItems = [
-    { icon: <FaChartBar />, text: 'Dashboard', path: '/dashboard', id: 1 },
-    { icon: <FaServicestack />, text: 'Tug Services', path: '/tugservices', id: 2 },
-    { icon: <FaUsersCog />, text: 'User', path: '/user-master', id: 3 },
+    { icon: <FaChartBar />, text: "Dashboard", path: "/dashboard", id: 1 },
+    {
+      icon: <FaServicestack />,
+      text: "Tug Services",
+      path: "/tugservices",
+      id: 2,
+    },
+    { icon: <FaUsersCog />, text: "User", path: "/user-master", id: 3 },
   ];
 
   const handleMenuClick = (item) => {
@@ -38,9 +43,9 @@ const Sidebar = ({ sidebarOpen, toggleSidebar }) => {
     }
     toggleSidebar();
   };
-  
+
   const handleLogout = () => {
-    navigate('/login');
+    navigate("/login");
   };
 
   return (
@@ -52,12 +57,16 @@ const Sidebar = ({ sidebarOpen, toggleSidebar }) => {
       `}
     >
       {/* Sidebar Header with User Info and Toggle Button */}
-      <div className={`flex items-center justify-between px-4 py-3 border-b ${!sidebarOpen ? "hidden" : ""}`}>
+      <div
+        className={`flex items-center justify-between px-4 py-3 border-b ${
+          !sidebarOpen ? "hidden" : ""
+        }`}
+      >
         <div className="flex items-center">
           <div className="w-8 h-8 flex items-center justify-center text-gray-600 mr-2">
             <FaUser size={16} />
           </div>
-        <div className={sidebarOpen ? "" : "hidden"}>
+          <div className={sidebarOpen ? "" : "hidden"}>
             <div className="text-xs text-gray-500">Welcome</div>
             <div className="text-sm font-medium text-gray-900">{username}</div>
           </div>
@@ -82,57 +91,64 @@ const Sidebar = ({ sidebarOpen, toggleSidebar }) => {
       <div className="flex-1 overflow-y-auto py-1">
         <ul>
           {menuItems.map((item, index) => {
-          // 1. Define the condition for hiding the item
-          const shouldHide = item?.id === 3 && userData?.role == 'admin';
-          // 2. Return null (don't render anything) if the item should be hidden
-          if (shouldHide) {
-            return null;
-          }
-          // 3. Otherwise, render the menu item as before
-          return (
-            <li key={index} className="mb-0.5">
-              <a
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleMenuClick(item);
-                }}
-                className={`
+            // 1. Define the condition for hiding the item
+            const shouldHide = item?.id === 3 && userData?.role == "admin";
+            // 2. Return null (don't render anything) if the item should be hidden
+            if (shouldHide) {
+              return null;
+            }
+            // 3. Otherwise, render the menu item as before
+            return (
+              <li key={index} className="mb-0.5">
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleMenuClick(item);
+                  }}
+                  className={`
                   flex items-center px-4 py-2 text-sm rounded-md
-                  ${item.active
-                    ? "text-blue-600 font-medium"
-                    : "text-gray-600 hover:text-blue-600 hover:bg-gray-50"
+                  ${
+                    item.active
+                      ? "text-blue-600 font-medium"
+                      : "text-gray-600 hover:text-blue-600 hover:bg-gray-50"
                   }
                   ${!sidebarOpen ? "justify-center" : ""}
                 `}
-              >
-                <span className="text-base mr-2">{item.icon}</span>
-                <span className={sidebarOpen ? "" : "hidden"}>{item.text}</span>
-              </a>
-            </li>
-          );
-        })}
+                >
+                  <span className="text-base mr-2">{item.icon}</span>
+                  <span className={sidebarOpen ? "" : "hidden"}>
+                    {item.text}
+                  </span>
+                </a>
+              </li>
+            );
+          })}
         </ul>
       </div>
 
       {/* Footer Icons */}
-      <div className={`p-2 fixed bottom-0 left-0 right-0 flex ${sidebarOpen ? "justify-between" : "justify-center"} border-t`}>
-      <button
-    onClick={handleLogout}
-    className={`
-      flex items-center px-4 py-2 text-sm text-gray-600 rounded-md
-      hover:text-blue-600 hover:bg-gray-50
-      transition-all duration-200
-      ${sidebarOpen ? "w-full justify-start" : "hidden"}
-    `}
-    title="Logout"
-  >
-    <span className="text-base">
-      <FaSignOutAlt size={16} />
-    </span>
-    {sidebarOpen && <span className="ml-2">Logout</span>}
-  </button>
-</div>
+      {sidebarOpen && (
+      <div
+        className={`p-2 fixed bottom-0 left-0 right-0 flex ${
+          sidebarOpen ? "justify-between" : "justify-center"
+        } border-t`}
+      >
+        <button
+          onClick={handleLogout}
+          className="flex items-center justify-center w-full px-4 py-2 text-sm rounded-md
+            text-white-300
+            hover:text-white-100 hover:bg-white-900 
+            transition-all duration-200"
+          title="Logout"
+        >
+          <span className="text-base">
+            <FaSignOutAlt size={16} />
+          </span>
+          <span className="ml-2">Logout</span>
+        </button>
+      </div>
+)}
     </div>
   );
 };
@@ -144,7 +160,7 @@ Sidebar.propTypes = {
 };
 
 Sidebar.defaultProps = {
-  sidebarOpen: true //It is used to set the default value of the sidebarOpen prop to true
+  sidebarOpen: true, //It is used to set the default value of the sidebarOpen prop to true
 };
 
 export default Sidebar;

@@ -119,14 +119,14 @@ const UserCreateForm = () => {
     //   tempErrors.email = true;
     //   isValid = false;
     // }
-    // if (!data.role) {
-    //   tempErrors.role = true;
-    //   isValid = false;
-    // }
-    // if (!data.tugName) {
-    //   tempErrors.tugName = true;
-    //   isValid = false;
-    // }
+    if (!data.role) {
+      tempErrors.role = true;
+      isValid = false;
+    }
+    if (!data.tugName) {
+      tempErrors.tugName = true;
+      isValid = false;
+    }
     if (!data.passwordHash) {
       tempErrors.passwordHash = true;
       isValid = false;
@@ -233,6 +233,7 @@ const UserCreateForm = () => {
     let payload = props?.data;
     if (type === "edit") {
       if (payload?.id) {
+        payload.confirmPassword = payload?.passwordHash;
         setData(payload);
         setSelectedRole(payload?.role);
       }
@@ -303,12 +304,12 @@ const UserCreateForm = () => {
                   fullWidth
                   size="small"
                   variant="outlined"
-                  // error={errors.role}
+                  error={errors.role}
                 >
-                  <InputLabel id="role-label">Role</InputLabel>
+                  <InputLabel id="role-label">Role *</InputLabel>
                   <Select
                     labelId="role-label"
-                    label="Role"
+                    label="Role *"
                     name="role"
                     value={selectedRole}
                     onChange={handleRoleChange}
@@ -329,10 +330,11 @@ const UserCreateForm = () => {
                 <TextField
                   size="small"
                   fullWidth
-                  label="TugName"
+                  label="TugName *"
                   name="tugName"
                   value={data.tugName}
                   onChange={handleChange}
+                  error={errors.tugName}
                 />
                 <div className="grid grid-cols-2 gap-3">
                   <TextField
