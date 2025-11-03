@@ -42,14 +42,14 @@ const Dashboard = () => {
 
       // Assuming 'item' has an 'activities' array, where each activity object has:
 
-      // Helper function to reformat YYYY-MM-DD to MM-DD-YYYY
+      // Helper function to reformat YYYY-MM-DD to DD-MM-YYYY
       const reformatDate = (dateString) => {
         if (!dateString) return null;
-        // activityDate is assumed to be YYYY-MM-DD (e.g., 2025-11-02)
+        // activityDate is assumed to be YYYY-MM-DD
         const parts = dateString.split("-");
         if (parts.length === 3) {
-          // Reassemble as MM-DD-YYYY (e.g., 11-02-2025)
-          return `${parts[1]}-${parts[2]}-${parts[0]}`;
+          // Reassemble as DD-MM-YYYY
+          return `${parts[2]}-${parts[1]}-${parts[0]}`;
         }
         return dateString; // Fallback if split fails
       };
@@ -174,9 +174,6 @@ const Dashboard = () => {
     // 1. Define the mapping from data field name to desired Excel header name
     const columnMapping = {
       serviceDate: "Date",
-      proceedDateTime: "Proceed Timing",
-      castOffDateTime: "Cast Of Timing",
-      totalHours: "Total Hours",
       refNo: "Voucher No",
       locationName: "Location",
       motherVessel: "Mother Vessel",
@@ -184,6 +181,9 @@ const Dashboard = () => {
       tugName: "Tug Name",
       serviceRemarks: "Type of Service",
       remarks: "Remarks",
+      proceedDateTime: "Proceed Timing",
+      castOffDateTime: "Cast Of Timing",
+      totalHours: "Total Hours",
     };
     // Use the keys of the mapping as the columns to extract from the row data
     const exportColumns = Object.keys(columnMapping);
