@@ -36,6 +36,9 @@ const UserCreateForm = () => {
     editedBy: "",
     editedDate: "",
     id: null,
+    noOfHours: 4,
+    packageCost: 2700,
+    perHourCost: 670
   });
   const [selectedRole, setSelectedRole] = useState("");
   const [loading, setLoading] = useState(false);
@@ -102,7 +105,10 @@ const UserCreateForm = () => {
       passwordHash: "",
       confirmPassword: "",
       isActive: 1,
-      id: null
+      id: null,
+      noOfHours: 4,
+      packageCost: 2700,
+      perHourCost: 670      
     });
     setSelectedRole("");
     setErrors({});
@@ -172,7 +178,6 @@ const UserCreateForm = () => {
       toast.error("Please fill in all mandatory fields.");
       return;
     }
-    // let payload = 
     data.createdBy = data?.id ? data?.createdBy : loginUserData?.username;
     data.createdDate = data?.id ? data?.createdDate : new Date().toISOString();
     data.editedBy = data?.id ? loginUserData?.username : "";
@@ -233,9 +238,15 @@ const UserCreateForm = () => {
     let payload = props?.data;
     if (type === "edit") {
       if (payload?.id) {
-        payload.confirmPassword = payload?.passwordHash;
-        setData(payload);
-        setSelectedRole(payload?.role);
+        const data = {
+          ...payload,
+          confirmPassword: payload?.passwordHash,
+          noOfHours: payload?.noOfHours ?? 4,
+          packageCost: payload?.packageCost ?? 2700,
+          perHourCost: payload?.perHourCost ?? 670,
+        };
+        setData(data);
+        setSelectedRole(data?.role);
       }
     } else {
       if (window.confirm("Are you sure you want to deactivate this record?")) {
@@ -248,9 +259,12 @@ const UserCreateForm = () => {
   const columns = [
     { headerName: "Username", field: "username", sortable: true },
     { headerName: "Email", field: "email", sortable: true },
-    { headerName: "Role", field: "role", sortable: true },
+    { headerName: "Role", field: "role", sortable: true, minWidth: 60, maxWidth: 180 },
     { headerName: "TugName", field: "tugName", sortable: true },
-    { headerName: "isActive", field: "isActiveValue", sortable: true },
+    { headerName: "isActive", field: "isActiveValue", sortable: true, minWidth: 60, maxWidth: 180 },
+    { field: "noOfHours", headerName: "No Of Hours", sortable: true },
+    { field: "packageCost", headerName: "Package Cost", sortable: true },
+    { field: "perHourCost", headerName: "Per Hour Cost", sortable: true },
     {
       headerName: "Actions",
       field: "actions",
@@ -300,6 +314,7 @@ const UserCreateForm = () => {
                   value={data.email}
                   onChange={handleChange}
                 />
+                <div className="grid grid-cols-2 gap-3">
                 <FormControl
                   fullWidth
                   size="small"
@@ -324,9 +339,6 @@ const UserCreateForm = () => {
                     ))}
                   </Select>
                 </FormControl>
-              </div>
-              {/* Row 2 */}
-              <div className="grid  grid-cols-1 md:grid-cols-3 gap-3">
                 <TextField
                   size="small"
                   fullWidth
@@ -336,6 +348,10 @@ const UserCreateForm = () => {
                   onChange={handleChange}
                   error={errors.tugName}
                 />
+                </div>
+              </div>
+              {/* Row 2 */}
+              <div className="grid  grid-cols-1 md:grid-cols-3 gap-3">
                 <div className="grid grid-cols-2 gap-3">
                   <TextField
                     size="small"
@@ -368,36 +384,66 @@ const UserCreateForm = () => {
                     }}
                   />
                   <TextField
+                      size="small"
+                      fullWidth
+                      label="Confirm Password *"
+                      name="confirmPassword"
+                      type={confirmPassword ? "text" : "password"}
+                      value={data.confirmPassword}
+                      onChange={handleChange}
+                      error={errors.confirmPassword}
+                      slotProps={{
+                        input: {
+                          endAdornment: (
+                            <InputAdornment position="end">
+                              <IconButton
+                                className="focus:outline-none active:outline-none active:ring-0"
+                                aria-label="toggle confirmPassword visibility"
+                                onClick={() =>
+                                  handleClickShowPassword("confirmPassword")
+                                }
+                                size="m"
+                                // onMouseDown={handleMouseDownPassword}
+                                edge="end"
+                              >
+                                {confirmPassword ? <FaEyeSlash /> : <FaEye />}
+                              </IconButton>
+                            </InputAdornment>
+                          ),
+                        },
+                      }}
+                    />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <TextField
                     size="small"
                     fullWidth
-                    label="Confirm Password *"
-                    name="confirmPassword"
-                    type={confirmPassword ? "text" : "password"}
-                    value={data.confirmPassword}
+                    label="No of Hours"
+                    name="noOfHours"
+                    value={data.noOfHours}
                     onChange={handleChange}
-                    error={errors.confirmPassword}
-                    slotProps={{
-                      input: {
-                        endAdornment: (
-                          <InputAdornment position="end">
-                            <IconButton
-                              className="focus:outline-none active:outline-none active:ring-0"
-                              aria-label="toggle confirmPassword visibility"
-                              onClick={() =>
-                                handleClickShowPassword("confirmPassword")
-                              }
-                              size="m"
-                              // onMouseDown={handleMouseDownPassword}
-                              edge="end"
-                            >
-                              {confirmPassword ? <FaEyeSlash /> : <FaEye />}
-                            </IconButton>
-                          </InputAdornment>
-                        ),
-                      },
-                    }}
+                    error={errors.noOfHours}
+                  />                    
+                  <TextField
+                    size="small"
+                    fullWidth
+                    label="Package Cost"
+                    name="packageCost"
+                    value={data.packageCost}
+                    onChange={handleChange}
+                    error={errors.packageCost}
                   />
-                </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                  <TextField
+                    size="small"
+                    fullWidth
+                    label="Per Hour Cost"
+                    name="perHourCost"
+                    value={data.perHourCost}
+                    onChange={handleChange}
+                    error={errors.perHourCost}
+                  />
                 <FormControlLabel
                   control={
                     <Switch
@@ -413,6 +459,7 @@ const UserCreateForm = () => {
                   }
                   label="Active"
                 />
+                </div>
               </div>
               <div className="flex justify-center gap-2 mt-4">
                 <Button
