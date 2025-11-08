@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { FaEdit, FaSearch } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import { Box, IconButton, Button, TextField } from "@mui/material";
+import { Box, IconButton, Button, TextField,Menu, MenuItem } from "@mui/material";
 import DataTable from "./common/DataTable";
 import { tugService } from "../api/apiServices";
 import Loader from "@/components/Loader.jsx";
@@ -11,6 +11,7 @@ import { toast } from "../components/common/toster.jsx";
 import ToastContainer from "../components/common/toster.jsx";
 import { TUG_SERVICES } from "../api/apiConfig.js";
 import CommonServices from "./common/commonService";
+import ListButton from "./common/listButton";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -39,104 +40,105 @@ const Dashboard = () => {
 
     response?.forEach((item) => {
       item.serviceDate = CommonServices.formatDate(item.serviceDate);
+      // Helper to safely reformat date (YYYY-MM-DD → DD-MM-YYYY)
+      const reformatDate = (date) =>
+        date?.split("-").reverse().join("-") ?? null;
 
-      // Assuming 'item' has an 'activities' array, where each activity object has:
-
-      // Helper function to reformat YYYY-MM-DD to DD-MM-YYYY
-      const reformatDate = (dateString) => {
-        if (!dateString) return null;
-        // activityDate is assumed to be YYYY-MM-DD
-        const parts = dateString.split("-");
-        if (parts.length === 3) {
-          // Reassemble as DD-MM-YYYY
-          return `${parts[2]}-${parts[1]}-${parts[0]}`;
-        }
-        return dateString; // Fallback if split fails
+      // Helper to safely combine date + time into ISO and Display formats
+      const getDateTime = (activity) => {
+        const { activityDate: date, activityTime: time } = activity ?? {};
+        if (!date || !time) return { iso: null, display: null };
+        return {
+          iso: `${date}T${time}`,
+          display: `${reformatDate(date)}T${time}`,
+        };
       };
 
-      // --- Find the 'Proceed' Activity ---
-      const proceedActivity = item?.activities.find(
-        (data) =>
-          data?.description &&
-          data.description.toUpperCase().includes("PROCEEDED TO ASSIST")
+      // --- Main Logic Refactored ---
+      const activities = item?.activities;
+      const findActivity = (keyword) =>
+        activities?.find((a) =>
+          a?.description?.toUpperCase().includes(keyword.toUpperCase())
+        );
+
+      const { iso: proceedISO, display: proceedDisplay } = getDateTime(
+        findActivity("PROCEEDED TO ASSIST")
+      );
+      const { iso: castOffISO, display: castOffDisplay } = getDateTime(
+        findActivity("TUG LINE CAST OFF")
       );
 
-      // --- Find the 'Cast Off' Activity ---
-      const castOffActivity = item?.activities.find(
-        (data) => data?.description === "TUG LINE CAST OFF"
-      );
+      item.proceedDateTime = proceedDisplay;
+      item.castOffDateTime = castOffDisplay;
 
-      // 1. Store the user-requested formatted string (MM-DD-YYYYT...) in item properties
-      item.proceedDateTime =
-        proceedActivity &&
-        proceedActivity.activityDate &&
-        proceedActivity.activityTime
-          ? `${reformatDate(proceedActivity.activityDate)}T${
-              proceedActivity.activityTime
-            }`
-          : null;
+      const calculateDuration = (startISO, endISO) => {
+        if (!startISO || !endISO) return "00:00";
+        const diffMs = new Date(endISO) - new Date(startISO);
 
-      item.castOffDateTime =
-        castOffActivity &&
-        castOffActivity.activityDate &&
-        castOffActivity.activityTime
-          ? `${reformatDate(castOffActivity.activityDate)}T${
-              castOffActivity.activityTime
-            }`
-          : null;
+        if (diffMs <= 0) return "00:00";
 
-      // 2. Create reliable ISO 8601 strings (YYYY-MM-DDT...) for calculation
-      const proceedDateTimeISO =
-        proceedActivity &&
-        proceedActivity.activityDate &&
-        proceedActivity.activityTime
-          ? `${proceedActivity.activityDate}T${proceedActivity.activityTime}`
-          : null;
+        const diffHrs = diffMs / 3_600_000;
+        return diffHrs >= 1
+          ? `${diffHrs.toFixed(2)} hr`
+          : `${(diffMs / 60_000).toFixed(2)} min`;
+      };
 
-      const castOffDateTimeISO =
-        castOffActivity &&
-        castOffActivity.activityDate &&
-        castOffActivity.activityTime
-          ? `${castOffActivity.activityDate}T${castOffActivity.activityTime}`
-          : null;
-
-      // 3. Perform calculation using the reliable ISO strings
-      if (proceedDateTimeISO && castOffDateTimeISO) {
-        // Create Date objects using the reliable YYYY-MM-DDT... format.
-        const start = new Date(proceedDateTimeISO);
-        const end = new Date(castOffDateTimeISO);
-
-        // Check if both dates were parsed successfully
-        if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
-          const diffMs = end.getTime() - start.getTime();
-
-          // Ensure end time is after start time (a positive difference)
-          if (diffMs > 0) {
-            const diffHrs = diffMs / (1000 * 60 * 60);
-            const diffMins = diffMs / (1000 * 60);
-
-            // Format the output
-            item.totalHours =
-              diffHrs >= 1
-                ? `${diffHrs.toFixed(2)} hr`
-                : `${diffMins.toFixed(2)} min`;
-          } else {
-            // If difference is zero or negative, set to 00:00 (invalid sequence)
-            item.totalHours = "00:00";
-          }
-        } else {
-          // If Date parsing failed (should be less likely now), set to 00:00
-          item.totalHours = "00:00";
-        }
-      } else {
-        // If one of the required activities was not found
-        item.totalHours = "00:00";
-      }
+      item.totalHours = calculateDuration(proceedISO, castOffISO);
+      item.cost = (item?.serviceType === "REFRESH ANCHOR" || item?.serviceType === "REPOSITION") ? 0 : getCalculatedCost(item,userData),
+      item.count = (item?.serviceType === "REFRESH ANCHOR" || item?.serviceType === "REPOSITION") ? 0 : 1,
+      item.foc = (item?.serviceType === "REFRESH ANCHOR" || item?.serviceType === "REPOSITION") ? 1 : 0
     });
     setData(response);
     setFilteredData(response);
     setLoading(false);
   };
+
+/**
+ * Calculates the final cost based on total service hours compared to a package's included hours.
+ * It also updates the 'item' object's cost property and returns the calculated cost.
+ *
+ * @param {object} item - The activity item object to update (expected to have totalHours).
+ * @param {object} userData - User package and cost data (packageCost, perHourCost, noOfHours).
+ * @returns {number} The calculated final cost.
+ */
+const getCalculatedCost = (item, userData) => {
+  // 1. Safely extract and default required values
+  const { totalHours } = item ?? {};
+  const { noOfHours = 2, packageCost = 2700, perHourCost = 670 } = userData ?? {};
+  let totalServiceHours = 0;
+
+  // 2. Parse the totalHours string to get a numeric value
+  if (totalHours) {
+    const parts = totalHours.split(' ');
+    const value = parseFloat(parts[0]);
+    const unit = parts[1];
+
+    if (!isNaN(value)) {
+      totalServiceHours = (unit === 'hr') ? value : (value / 60);
+    }
+  }
+
+  // 3. Calculate the difference (overage)
+  const overageHours = totalServiceHours - noOfHours;
+
+  // 4. Determine the final cost and update the item object
+  let finalCost;
+
+  if (overageHours <= 0) {
+    // No overage
+    finalCost = packageCost;
+  } else {
+    // Calculate full overage hours to charge (rounding up to the next full hour)
+    const chargeableOverageHours = Math.ceil(overageHours);
+
+    const additionalCost = chargeableOverageHours * perHourCost;
+    finalCost = packageCost + additionalCost;
+  }
+
+  // Update the item object and return the final cost
+  item.cost = finalCost;
+  return finalCost;
+};
 
   const onRowClicked = (props) => {
     const data = props?.data;
@@ -170,21 +172,67 @@ const Dashboard = () => {
     fetchData();
   };
 
-  const exportToExcel = () => {
+  /**
+ * Generates and returns the final Excel column mapping
+ * based on export type and user role.
+ *
+ * @param {string} excelType - Type of Excel export ('regular' | 'weekly')
+ * @param {string} role - Current user role ('admin' | 'user')
+ * @returns {object} - Final column mapping for export
+ */
+const getExcelColums = (excelType = 'regular') => {
+  const role = userData?.role;
+
+  // 1. Base column mapping (default for all exports)
+  const base = {
+    serviceDate: "Date",
+    refNo: "Voucher No",
+    locationName: "Location",
+    motherVessel: "Mother Vessel",
+    vesselName: "Daughter Vessel",
+    tugName: "Tug Name",
+    serviceRemarks: "Type of Service",
+    remarks: "Remarks",
+    proceedDateTime: "Proceed Timing",
+    castOffDateTime: "Cast Of Timing",
+    totalHours: "Total Hours",
+    jobNo: "Job No",
+    cost: "Cost",
+    count: "Count",
+    foc: "FOC",
+  };
+
+  // 2. Columns to exclude for restricted users or weekly export
+  const exclude = ['jobNo', 'cost', 'count', 'foc'];
+
+  // 3. Additional columns specific to weekly export
+  const weeklyAdd = {
+    pairWith: "Pair With",
+    commandAndRank: "Command/Rank and Name",
+  };
+
+  // 4. Start with base mapping
+  let cols = { ...base };
+
+  // 5. Remove restricted columns for 'weekly' type or 'user' role
+  if (excelType === 'weekly' || role === 'user') {
+    cols = Object.fromEntries(
+      Object.entries(cols).filter(([key]) => !exclude.includes(key))
+    );
+  }
+
+  // 6. Add weekly-specific columns at the end for 'weekly' export type
+  if (excelType === 'weekly') {
+    Object.assign(cols, weeklyAdd);
+  }
+
+  // 7. Return final mapping
+  return cols;
+}
+
+  const exportToExcel = (excelType='regular') => {
     // 1. Define the mapping from data field name to desired Excel header name
-    const columnMapping = {
-      serviceDate: "Date",
-      refNo: "Voucher No",
-      locationName: "Location",
-      motherVessel: "Mother Vessel",
-      vesselName: "Daughter Vessel",
-      tugName: "Tug Name",
-      serviceRemarks: "Type of Service",
-      remarks: "Remarks",
-      proceedDateTime: "Proceed Timing",
-      castOffDateTime: "Cast Of Timing",
-      totalHours: "Total Hours",
-    };
+    const columnMapping = getExcelColums(excelType);
     // Use the keys of the mapping as the columns to extract from the row data
     const exportColumns = Object.keys(columnMapping);
 
@@ -212,8 +260,9 @@ const Dashboard = () => {
     const blob = new Blob([excelBuffer], {
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     });
+    const FileName = excelType === 'regular' ? "TugJobDetails.xlsx" : "WeeklyTugActivitiesReport.xlsx"
     // Assuming saveAs is available (e.g., from file-saver library)
-    saveAs(blob, "TugJobDetails.xlsx");
+    saveAs(blob, FileName);
   };
 
   const columns = [
@@ -267,6 +316,33 @@ const Dashboard = () => {
       minWidth: 130,
     },
     {
+      headerName: "Job No",
+      field: "jobNo",
+      sortable: true,
+      minWidth: 80,
+      maxWidth: 120
+    },
+    {
+      headerName: "Cost",
+      field: "cost",
+      sortable: true,
+      minWidth: 80,
+      maxWidth: 120
+    },
+    {
+      headerName: "Count",
+      field: "count",
+      sortable: true,
+      minWidth: 80,
+    },
+    {
+      headerName: "FOC",
+      field: "foc",
+      sortable: true,
+      minWidth: 80,
+      maxWidth: 120
+    },
+    {
       headerName: "Actions",
       field: "actions",
       sortable: false,
@@ -276,6 +352,19 @@ const Dashboard = () => {
       cellRenderer: ActionRenderer,
     },
   ];
+
+  const ExportMenuItems = [
+    {
+      label: "Regular Format",
+      // icon: <EditIcon fontSize="small" />,
+      onClick: () => exportToExcel("regular"),
+    },
+    {
+      label: "Weekly Format",
+      onClick: () => exportToExcel("weekly"),
+    }
+  ];
+
 
   return (
     <>
@@ -343,7 +432,7 @@ const Dashboard = () => {
           </Button>
 
           {/* Export button (align right) */}
-          <Button
+          {/* <Button
             variant="contained"
             size="small"
             onClick={exportToExcel}
@@ -351,7 +440,15 @@ const Dashboard = () => {
             className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 focus:outline-none active:outline-none active:ring-0"
           >
             Export Data
-          </Button>
+          </Button> */}
+          <div style={{ marginLeft: "auto" }}>
+          <ListButton 
+          buttonLabel="Export Data" 
+          items={ExportMenuItems} 
+          buttonColor="indigo"
+          className="ml-auto bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 focus:outline-none active:outline-none active:ring-0"
+          />
+          </div>
         </Box>
 
         {/* AG Grid Table */}

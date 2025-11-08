@@ -92,7 +92,7 @@ const Sidebar = ({ sidebarOpen, toggleSidebar }) => {
         <ul>
           {menuItems.map((item, index) => {
             // 1. Define the condition for hiding the item
-            const shouldHide = item?.id === 3 && userData?.role == "admin";
+            const shouldHide = item?.id === 3 && !(userData?.role == "admin" || userData?.role === 'Admin');
             // 2. Return null (don't render anything) if the item should be hidden
             if (shouldHide) {
               return null;
