@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { FaEdit, FaSearch } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import { Box, IconButton, Button, TextField } from "@mui/material";
+import { Box, IconButton, Button, TextField,Menu, MenuItem } from "@mui/material";
 import DataTable from "./common/DataTable";
 import { tugService } from "../api/apiServices";
 import Loader from "@/components/Loader.jsx";
@@ -11,6 +11,7 @@ import { toast } from "../components/common/toster.jsx";
 import ToastContainer from "../components/common/toster.jsx";
 import { TUG_SERVICES } from "../api/apiConfig.js";
 import CommonServices from "./common/commonService";
+import ListButton from "./common/listButton";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -171,25 +172,67 @@ const getCalculatedCost = (item, userData) => {
     fetchData();
   };
 
-  const exportToExcel = () => {
+  /**
+ * Generates and returns the final Excel column mapping
+ * based on export type and user role.
+ *
+ * @param {string} excelType - Type of Excel export ('regular' | 'weekly')
+ * @param {string} role - Current user role ('admin' | 'user')
+ * @returns {object} - Final column mapping for export
+ */
+const getExcelColums = (excelType = 'regular') => {
+  const role = userData?.role;
+
+  // 1. Base column mapping (default for all exports)
+  const base = {
+    serviceDate: "Date",
+    refNo: "Voucher No",
+    locationName: "Location",
+    motherVessel: "Mother Vessel",
+    vesselName: "Daughter Vessel",
+    tugName: "Tug Name",
+    serviceRemarks: "Type of Service",
+    remarks: "Remarks",
+    proceedDateTime: "Proceed Timing",
+    castOffDateTime: "Cast Of Timing",
+    totalHours: "Total Hours",
+    jobNo: "Job No",
+    cost: "Cost",
+    count: "Count",
+    foc: "FOC",
+  };
+
+  // 2. Columns to exclude for restricted users or weekly export
+  const exclude = ['jobNo', 'cost', 'count', 'foc'];
+
+  // 3. Additional columns specific to weekly export
+  const weeklyAdd = {
+    pairWith: "Pair With",
+    commandAndRank: "Command/Rank and Name",
+  };
+
+  // 4. Start with base mapping
+  let cols = { ...base };
+
+  // 5. Remove restricted columns for 'weekly' type or 'user' role
+  if (excelType === 'weekly' || role === 'user') {
+    cols = Object.fromEntries(
+      Object.entries(cols).filter(([key]) => !exclude.includes(key))
+    );
+  }
+
+  // 6. Add weekly-specific columns at the end for 'weekly' export type
+  if (excelType === 'weekly') {
+    Object.assign(cols, weeklyAdd);
+  }
+
+  // 7. Return final mapping
+  return cols;
+}
+
+  const exportToExcel = (excelType='regular') => {
     // 1. Define the mapping from data field name to desired Excel header name
-    const columnMapping = {
-      serviceDate: "Date",
-      refNo: "Voucher No",
-      locationName: "Location",
-      motherVessel: "Mother Vessel",
-      vesselName: "Daughter Vessel",
-      tugName: "Tug Name",
-      serviceRemarks: "Type of Service",
-      remarks: "Remarks",
-      proceedDateTime: "Proceed Timing",
-      castOffDateTime: "Cast Of Timing",
-      totalHours: "Total Hours",
-      jobNo: "Job No",
-      cost: "Cost",
-      count: "Count",
-      foc: "FOC",      
-    };
+    const columnMapping = getExcelColums(excelType);
     // Use the keys of the mapping as the columns to extract from the row data
     const exportColumns = Object.keys(columnMapping);
 
@@ -217,8 +260,9 @@ const getCalculatedCost = (item, userData) => {
     const blob = new Blob([excelBuffer], {
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     });
+    const FileName = excelType === 'regular' ? "TugJobDetails.xlsx" : "WeeklyTugActivitiesReport.xlsx"
     // Assuming saveAs is available (e.g., from file-saver library)
-    saveAs(blob, "TugJobDetails.xlsx");
+    saveAs(blob, FileName);
   };
 
   const columns = [
@@ -309,6 +353,19 @@ const getCalculatedCost = (item, userData) => {
     },
   ];
 
+  const ExportMenuItems = [
+    {
+      label: "Regular Format",
+      // icon: <EditIcon fontSize="small" />,
+      onClick: () => exportToExcel("regular"),
+    },
+    {
+      label: "Weekly Format",
+      onClick: () => exportToExcel("weekly"),
+    }
+  ];
+
+
   return (
     <>
       <Loader show={loading} />
@@ -375,7 +432,7 @@ const getCalculatedCost = (item, userData) => {
           </Button>
 
           {/* Export button (align right) */}
-          <Button
+          {/* <Button
             variant="contained"
             size="small"
             onClick={exportToExcel}
@@ -383,7 +440,15 @@ const getCalculatedCost = (item, userData) => {
             className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 focus:outline-none active:outline-none active:ring-0"
           >
             Export Data
-          </Button>
+          </Button> */}
+          <div style={{ marginLeft: "auto" }}>
+          <ListButton 
+          buttonLabel="Export Data" 
+          items={ExportMenuItems} 
+          buttonColor="indigo"
+          className="ml-auto bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 focus:outline-none active:outline-none active:ring-0"
+          />
+          </div>
         </Box>
 
         {/* AG Grid Table */}

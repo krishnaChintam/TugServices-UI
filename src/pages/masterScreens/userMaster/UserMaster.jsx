@@ -133,11 +133,11 @@ const UserCreateForm = () => {
       tempErrors.tugName = true;
       isValid = false;
     }
-    if (!data.passwordHash) {
+    if (!data?.id && !data.passwordHash) {
       tempErrors.passwordHash = true;
       isValid = false;
     }
-    if (!data.confirmPassword) {
+    if (!data?.id && !data.confirmPassword) {
       tempErrors.confirmPassword = true;
       isValid = false;
     }

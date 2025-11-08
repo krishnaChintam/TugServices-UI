@@ -17,7 +17,7 @@ import {
   Autocomplete,
 } from "@mui/material";
 import { useParams, useNavigate } from "react-router-dom";
-import { FaTrash } from "react-icons/fa";
+import { FaTrash,FaDownload } from "react-icons/fa";
 import {
   locationService,
   vesselService,
@@ -44,6 +44,7 @@ export default function TugServices() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const userData = JSON.parse(localStorage.getItem("userData"));
+  const [files, setFiles] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -167,9 +168,6 @@ export default function TugServices() {
   };
 
   const updateRow = (index, key, value) => {
-    if (key === "activityTime") {
-      value = `${value}:00`;
-    }
     setActivities((prev) =>
       prev.map((r, i) => (i === index ? { ...r, [key]: value } : r))
     );
@@ -406,6 +404,30 @@ export default function TugServices() {
   const deleteRow = (index) => {
     const updated = activities.filter((_, i) => i !== index);
     setActivities(updated);
+  };
+
+  
+  // Handle file upload
+  const handleFileUpload = (event) => {
+    const newFiles = Array.from(event.target.files);
+    const updatedList = [...files, ...newFiles];
+    setFiles(updatedList);
+  };
+
+  // Handle file delete
+  const handleDelete = (index) => {
+    const updatedList = files.filter((_, i) => i !== index);
+    setFiles(updatedList);
+  };
+
+  // Handle file download (for demo only)
+  const handleDownload = (file) => {
+    const url = URL.createObjectURL(file);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = file.name;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -789,6 +811,56 @@ export default function TugServices() {
               Print
             </Button>
           </div>
+          <div className="w-full mt-8 p-4 bg-white border rounded shadow-sm">
+      {/* Upload Button */}
+      <label className="block w-full">
+        <input
+          type="file"
+          multiple
+          onChange={handleFileUpload}
+          className="hidden"
+        />
+        <div className="w-full bg-green-600 text-white py-2 text-center rounded cursor-pointer hover:bg-green-700 transition">
+          Upload Files
+        </div>
+      </label>
+
+      {/* Uploaded File List */}
+      <div className="mt-5">
+        <h3 className="text-lg font-semibold mb-2">Uploaded Files</h3>
+
+        {files.length === 0 ? (
+          <p className="text-gray-500 text-sm">No files uploaded yet.</p>
+        ) : (
+          <ul className="space-y-2">
+            {files.map((file, index) => (
+              <li
+                key={index}
+                className="flex items-center justify-between bg-gray-100 px-3 py-2 rounded"
+              >
+                <span className="truncate max-w-[60%]">{file.name}</span>
+                <div className="flex gap-2">
+                  <Button
+                    variant="contained"
+                    onClick={() => handleDownload(file)}
+                    className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 text-sm"
+                  >
+                    <FaDownload/>
+                  </Button>
+                  <Button
+                    variant="contained"
+                    onClick={() => handleDelete(index)}
+                    className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-sm"
+                  >
+                    <FaTrash />
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
         </div>
       </div>
     </>
