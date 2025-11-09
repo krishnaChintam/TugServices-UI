@@ -3,8 +3,14 @@
  * This file provides actual service functions that can be used throughout the application
  */
 
-import axiosInstance from './axiosConfig.js';
-import { TUG_SERVICES, LOCATIONS, VESSELS, LISTING, TYPE_OF_SERVICES } from './apiConfig.js';
+import axiosInstance from "./axiosConfig.js";
+import {
+  TUG_SERVICES,
+  LOCATIONS,
+  VESSELS,
+  LISTING,
+  TYPE_OF_SERVICES,
+} from "./apiConfig.js";
 
 // Tug Services API
 export const tugService = {
@@ -20,19 +26,44 @@ export const tugService = {
   },
 
   // Get service by ID
-  getServiceById: async (serviceId) => {
+  getServiceById: async (serviceId,url=TUG_SERVICES.GET_SERVICE_BY_ID) => {
     try {
-      const response = await axiosInstance.get(`${TUG_SERVICES.GET_SERVICE_BY_ID}/${serviceId}`);
+      const response = await axiosInstance.get(
+        `${url}/${serviceId}`
+      );
       return response.data;
     } catch (error) {
       throw new Error(`Failed to fetch service: ${error.message}`);
     }
   },
 
+  getfilesById: async (serviceId, url = TUG_SERVICES.GET_SERVICE_BY_ID) => {
+    try {
+      const response = await axiosInstance.get(`${url}/${serviceId}`, {
+        responseType: "blob",
+      });
+      return response; // ✅ Return full response (not just data)
+    } catch (error) {
+      throw new Error(`Failed to fetch service: ${error.message}`);
+    }
+  },
+
+  deleteFileById: async (documentId, url = TUG_SERVICES.DELETE_UPLOADED_DOC_BY_ID) => {
+    try {
+      const response = await axiosInstance.delete(`${url}/${documentId}`);
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to delete document: ${error.message}`);
+    }
+  },
+
   // Create new service
   createService: async (serviceData) => {
     try {
-      const response = await axiosInstance.post(TUG_SERVICES.CREATE_SERVICE, serviceData);
+      const response = await axiosInstance.post(
+        TUG_SERVICES.CREATE_SERVICE,
+        serviceData
+      );
       return response.data;
     } catch (error) {
       throw new Error(`Failed to create service: ${error.message}`);
@@ -42,7 +73,10 @@ export const tugService = {
   // Update service
   updateService: async (serviceId, serviceData) => {
     try {
-      const response = await axiosInstance.put(`${TUG_SERVICES.UPDATE_SERVICE}/${serviceId}`, serviceData);
+      const response = await axiosInstance.put(
+        `${TUG_SERVICES.UPDATE_SERVICE}/${serviceId}`,
+        serviceData
+      );
       return response.data;
     } catch (error) {
       throw new Error(`Failed to update service: ${error.message}`);
@@ -52,12 +86,52 @@ export const tugService = {
   // Delete service
   deleteService: async (serviceId) => {
     try {
-      const response = await axiosInstance.delete(`${TUG_SERVICES.DELETE_SERVICE}/${serviceId}`);
+      const response = await axiosInstance.delete(
+        `${TUG_SERVICES.DELETE_SERVICE}/${serviceId}`
+      );
       return response.data;
     } catch (error) {
       throw new Error(`Failed to delete service: ${error.message}`);
     }
+  },
+
+  // Upload service
+uploadService: async (payload) => {
+  try {
+    // Create FormData to handle files + metadata
+    const formData = new FormData();
+
+    // Append non-file fields
+    formData.append("serviceId", payload.serviceId);
+    formData.append("uploadedBy", payload.uploadedBy);
+
+    // Append documents (single or multiple files)
+    if (Array.isArray(payload.documents)) {
+      payload.documents.forEach((file) => {
+        formData.append("documents", file);
+      });
+    } else {
+      formData.append("documents", payload.documents);
+    }
+
+    // API call
+    const response = await axiosInstance.post(
+      TUG_SERVICES.UPLOAD_DOC_BY_ID,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    throw new Error(`Failed to upload documents: ${error.message}`);
   }
+},
+
+
 };
 
 // Locations API
@@ -75,7 +149,9 @@ export const locationService = {
   // Get location by ID
   getLocationById: async (locationId) => {
     try {
-      const response = await axiosInstance.get(`${LOCATIONS.GET_BY_ID}/${locationId}`);
+      const response = await axiosInstance.get(
+        `${LOCATIONS.GET_BY_ID}/${locationId}`
+      );
       return response.data;
     } catch (error) {
       throw new Error(`Failed to fetch location: ${error.message}`);
@@ -90,7 +166,7 @@ export const locationService = {
     } catch (error) {
       throw new Error(`Failed to create location: ${error.message}`);
     }
-  }
+  },
 };
 
 export const typeOfService = {
@@ -119,7 +195,9 @@ export const vesselService = {
   // Get vessel by ID
   getVesselById: async (vesselId) => {
     try {
-      const response = await axiosInstance.get(`${VESSELS.GET_BY_ID}/${vesselId}`);
+      const response = await axiosInstance.get(
+        `${VESSELS.GET_BY_ID}/${vesselId}`
+      );
       return response.data;
     } catch (error) {
       throw new Error(`Failed to fetch vessel: ${error.message}`);
@@ -134,7 +212,7 @@ export const vesselService = {
     } catch (error) {
       throw new Error(`Failed to create vessel: ${error.message}`);
     }
-  }
+  },
 };
 
 // Generic service that can handle any endpoint directly
@@ -165,13 +243,13 @@ export const genericDataService = {
       return {
         success: true,
         data: response.data,
-        status: response.status
+        status: response.status,
       };
     } catch (error) {
       return {
         success: false,
         error: error.response?.data?.message || error.message,
-        status: error.response?.status || 500
+        status: error.response?.status || 500,
       };
     }
   },
@@ -185,22 +263,22 @@ export const genericDataService = {
         success: true,
         data: response.data,
         id: id,
-        status: response.status
+        status: response.status,
       };
     } catch (error) {
       return {
         success: false,
         error: error.response?.data?.message || error.message,
         id: id,
-        status: error.response?.status || 500
+        status: error.response?.status || 500,
       };
     }
-  }
+  },
 };
 
 export default {
   tugService,
   locationService,
   vesselService,
-  genericDataService
+  genericDataService,
 };
