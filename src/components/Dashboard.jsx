@@ -87,6 +87,7 @@ const Dashboard = () => {
       item.cost = (item?.serviceType === "REFRESH ANCHOR" || item?.serviceType === "REPOSITION") ? 0 : getCalculatedCost(item,userData),
       item.count = (item?.serviceType === "REFRESH ANCHOR" || item?.serviceType === "REPOSITION") ? 0 : 1,
       item.foc = (item?.serviceType === "REFRESH ANCHOR" || item?.serviceType === "REPOSITION") ? 1 : 0
+      item.isCanceled = item?.isActive ? 'True' : 'False'
     });
     setData(response);
     setFilteredData(response);
@@ -239,7 +240,7 @@ const getExcelColums = (excelType = 'regular') => {
     const exportColumns = Object.keys(columnMapping);
 
     // 2. Filter data and apply the new headers
-    const mappedData = filteredData.map((row) => {
+    const mappedData = filteredData?.filter(row => row.isActive === 1)?.map((row) => {
       const newRow = {};
       exportColumns.forEach((colKey) => {
         // Use the mapped header name as the key in the new object
@@ -397,6 +398,13 @@ const getExcelColums = (excelType = 'regular') => {
       headerName: "FOC",
       field: "foc",
       tooltipField: "foc",
+      sortable: true,
+      width: 100,
+      maxWidth: 120
+    },
+    {
+      headerName: "Status",
+      field: "isCanceled",
       sortable: true,
       width: 100,
       maxWidth: 120
