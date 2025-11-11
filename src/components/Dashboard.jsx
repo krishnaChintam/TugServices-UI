@@ -49,8 +49,8 @@ const Dashboard = () => {
         const { activityDate: date, activityTime: time } = activity ?? {};
         if (!date || !time) return { iso: null, display: null };
         return {
-          iso: `${date}T${time}`,
-          display: `${reformatDate(date)}T${time}`,
+          iso: `${date} ${time}`,
+          display: `${reformatDate(date)} ${time}`,
         };
       };
 
@@ -87,6 +87,7 @@ const Dashboard = () => {
       item.cost = (item?.serviceType === "REFRESH ANCHOR" || item?.serviceType === "REPOSITION") ? 0 : getCalculatedCost(item,userData),
       item.count = (item?.serviceType === "REFRESH ANCHOR" || item?.serviceType === "REPOSITION") ? 0 : 1,
       item.foc = (item?.serviceType === "REFRESH ANCHOR" || item?.serviceType === "REPOSITION") ? 1 : 0
+      item.isCanceled = item?.isActive ? 'Active' : 'Cancelled'
     });
     setData(response);
     setFilteredData(response);
@@ -196,6 +197,8 @@ const getExcelColums = (excelType = 'regular') => {
     proceedDateTime: "Proceed Timing",
     castOffDateTime: "Cast Of Timing",
     totalHours: "Total Hours",
+    pairWith: 'Pair With',
+    commandRankAndName: 'CommandRank And Name',
     jobNo: "Job No",
     cost: "Cost",
     count: "Count",
@@ -208,7 +211,7 @@ const getExcelColums = (excelType = 'regular') => {
   // 3. Additional columns specific to weekly export
   const weeklyAdd = {
     pairWith: "Pair With",
-    commandAndRank: "Command/Rank and Name",
+    commandAndRank: "Command Rank and Name",
   };
 
   // 4. Start with base mapping
@@ -237,7 +240,7 @@ const getExcelColums = (excelType = 'regular') => {
     const exportColumns = Object.keys(columnMapping);
 
     // 2. Filter data and apply the new headers
-    const mappedData = filteredData.map((row) => {
+    const mappedData = filteredData?.filter(row => row.isActive === 1)?.map((row) => {
       const newRow = {};
       exportColumns.forEach((colKey) => {
         // Use the mapped header name as the key in the new object
@@ -265,81 +268,182 @@ const getExcelColums = (excelType = 'regular') => {
     saveAs(blob, FileName);
   };
 
+/**
+ * Filters the list of columns based on the user's role.
+ * If the user role is 'user', it excludes columns with field names:
+ * 'jobNo', 'cost', 'count', 'foc', and 'isCanceled'.
+ *
+ * @param {Array<Object>} columns - The array of all column definitions.
+ * @param {Object} userData - An object containing the user's role, e.g., { role: 'user' }.
+ * @returns {Array<Object>} The filtered array of column definitions.
+ */
+const getTableColoums = (columns) => {
+  // Define the fields to be hidden for 'user' role
+  const restrictedFields = [
+    "jobNo",
+    "cost",
+    "count",
+    "foc",
+    "isCanceled"
+  ];
+
+  // Check the user's role
+  const isUserRole = userData && userData?.role === 'user';
+console.log(isUserRole)
+  // If the user role is NOT 'user', return all columns
+  if (!isUserRole) {
+    return columns;
+  }
+
+  // If the user role IS 'user', filter out the restricted columns
+  const filteredColumns = columns.filter(column => {
+    // The .includes() method checks if the column.field is in the restrictedFields array.
+    // The '!' negates the result, meaning we keep the column ONLY if it's NOT restricted.
+    return !restrictedFields.includes(column.field);
+  });
+
+  return filteredColumns;
+};
+
   const columns = [
-    { headerName: "Date", field: "serviceDate", sortable: true, minWidth: 120, maxWidth: 180 },
-    { headerName: "Voucher No", field: "refNo", sortable: true, minWidth: 120, maxWidth: 250 },
+    { 
+      headerName: "Date", 
+      field: "serviceDate", 
+      sortable: true, 
+      width: 120, 
+      maxWidth: 220 
+    },
+    { 
+      headerName: "Voucher No", 
+      field: "refNo", 
+      sortable: true,
+      tooltipField:"refNo", 
+      width: 150, 
+      maxWidth: 250 
+    },
     {
       headerName: "Location",
       field: "locationName",
+      tooltipField: "locationName",
       sortable: true,
-      minWidth: 120,
-      maxWidth: 250
+      width: 140,
+      maxWidth: 300
     },
     {
       headerName: "Mother Vessel",
       field: "motherVessel",
+      tooltipField: "motherVessel",
       sortable: true,
-      minWidth: 140,
+      width: 150,
       maxWidth: 250
     },
     {
       headerName: "Daughter Vessel",
       field: "vesselName",
+      tooltipField: "vesselName",
       sortable: true,
-      minWidth: 160,
+      width: 160,
       maxWidth: 250
     },
-    { headerName: "Tug Name", field: "tugName", sortable: true,minWidth: 120, maxWidth: 120 },
+    { headerName: "Tug Name",
+      field: "tugName",
+      tooltipField: "tugName", 
+      sortable: true,
+      width: 125, 
+      maxWidth: 220 
+    },
     {
       headerName: "Type of Service",
       field: "serviceRemarks",
+      tooltipField: "serviceRemarks",
       sortable: true,
-      minWidth: 180,
+      width: 180,
+      maxWidth: 280 
     },
-    { headerName: "Remarks", field: "remarks", sortable: true, minWidth: 200 },
+    { headerName: "Remarks", 
+      field: "remarks",
+      tooltipField: "remarks", 
+      sortable: true, 
+      width: 200,
+      maxWidth: 300 
+    },
     {
       headerName: "Proceed Timing",
       field: "proceedDateTime",
+      tooltipField: "proceedDateTime",
       sortable: true,
-      minWidth: 150,
+      width: 180,
+      maxWidth: 250 
     },
     {
       headerName: "Cast Of Timing",
       field: "castOffDateTime",
+      tooltipField: "castOffDateTime",
       sortable: true,
-      minWidth: 150,
+      width: 180,
+      maxWidth: 250 
     },
     {
       headerName: "Total Hours",
       field: "totalHours",
+      tooltipField: "totalHours",
       sortable: true,
-      minWidth: 130,
+      width: 130,
+      maxWidth: 280 
+    },
+    {
+      headerName: "Pair With",
+      field: "pairWith",
+      tooltipField: "pairWith",
+      sortable: true,
+      width: 130,
+      maxWidth: 280 
+    },
+    {
+      headerName: "Command Rank And Name",
+      field: "commandRankAndName",
+      tooltipField: "commandRankAndName",
+      sortable: true,
+      width: 230,
+      maxWidth: 280 
     },
     {
       headerName: "Job No",
       field: "jobNo",
+      tooltipField: "jobNo",
       sortable: true,
-      minWidth: 80,
-      maxWidth: 120
+      width: 100,
+      maxWidth: 220
     },
     {
       headerName: "Cost",
       field: "cost",
+      tooltipField: "cost",
       sortable: true,
-      minWidth: 80,
-      maxWidth: 120
+      width: 100,
+      maxWidth: 200
     },
     {
       headerName: "Count",
       field: "count",
+      tooltipField: "count",
       sortable: true,
-      minWidth: 80,
+      width: 100,
+      maxWidth: 150 
     },
     {
       headerName: "FOC",
       field: "foc",
+      tooltipField: "foc",
       sortable: true,
-      minWidth: 80,
+      width: 100,
+      maxWidth: 120
+    },
+    {
+      headerName: "Status",
+      field: "isCanceled",
+      sortable: true,
+      width: 100,
       maxWidth: 120
     },
     {
@@ -414,8 +518,7 @@ const getExcelColums = (excelType = 'regular') => {
             onChange={(e) => setEndDate(e.target.value)}
             slotProps={{
               htmlInput: {
-                min: startDate || "",
-                // max: currentDate,
+                min: startDate || ""
               },
             }}
           />
@@ -430,17 +533,6 @@ const getExcelColums = (excelType = 'regular') => {
           >
             Search
           </Button>
-
-          {/* Export button (align right) */}
-          {/* <Button
-            variant="contained"
-            size="small"
-            onClick={exportToExcel}
-            style={{ marginLeft: "auto" }}
-            className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 focus:outline-none active:outline-none active:ring-0"
-          >
-            Export Data
-          </Button> */}
           <div style={{ marginLeft: "auto" }}>
           <ListButton 
           buttonLabel="Export Data" 
@@ -456,7 +548,7 @@ const getExcelColums = (excelType = 'regular') => {
           rowData={filteredData}
           sortable={true}
           filter={true}
-          columnDefs={columns}
+          columnDefs={getTableColoums(columns)}
           quickFilterValue={search}
         />
       </Box>

@@ -17,7 +17,7 @@ import {
   Autocomplete,
 } from "@mui/material";
 import { useParams, useNavigate } from "react-router-dom";
-import { FaTrash,FaDownload } from "react-icons/fa";
+import { FaTrash, FaDownload } from "react-icons/fa";
 import {
   locationService,
   vesselService,
@@ -28,6 +28,8 @@ import { defaultActivitiesList } from "./sampleData.js";
 import { toast } from "../../components/common/toster.jsx";
 import ToastContainer from "../../components/common/toster.jsx";
 import Loader from "@/components/Loader.jsx";
+import ConfirmModal from "@/components/common/ConfirmModal.jsx";
+import { TUG_SERVICES } from "@/api/apiConfig.js"; 
 
 export default function TugServices() {
   const [activities, setActivities] = useState(defaultActivitiesList);
@@ -45,6 +47,14 @@ export default function TugServices() {
   const [errors, setErrors] = useState({});
   const userData = JSON.parse(localStorage.getItem("userData"));
   const [files, setFiles] = useState([]);
+  const [openModal, setOpenModal] = useState(false);
+  const [confirmModelText, setConfirmModelText] = useState({
+    title:"",
+    message:"",
+    confirmButtonName:"",
+    cancelButtonName:"",
+    type:''
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -71,8 +81,19 @@ export default function TugServices() {
     createdBy: "",
     createdDate: null,
     motherVessel: null,
-    tugName: ''
+    tugName: "",
+    commandRankAndName:'',
+    pairWith:''
   });
+
+  const onModelConfirmation = () => {
+    handleCloseModal(); // Close the modal after action
+    if(confirmModelText?.type === 'cancleTrx,deleteFile'){
+      handleSave("cancel");
+    }else if(confirmModelText?.type === 'deleteFile'){
+      handleDelete(confirmModelText?.data)
+    }
+  };
 
   const patchResponseData = (res) => {
     setForm(res);
@@ -101,6 +122,7 @@ export default function TugServices() {
       const res = await tugService.getServiceById(id);
       if (res?.serviceId) {
         patchResponseData(res);
+        getUploadedDocs(res?.serviceId);
       }
     } catch (error) {
       console.error("Error fetching service:", error);
@@ -122,7 +144,7 @@ export default function TugServices() {
       setLocations(locationsData || []);
       const vessels = [];
       const motherVessels = [];
-    
+
       vesselsData.forEach((item) => {
         if (Number(item.isMotherVessel) === 0) {
           vessels.push(item);
@@ -130,7 +152,7 @@ export default function TugServices() {
           motherVessels.push(item);
         }
       });
-    
+
       setVessels(vessels);
       setMotherVessels(motherVessels);
       setTypeOfServicesList(typeOfServicesData || []);
@@ -173,7 +195,49 @@ export default function TugServices() {
     );
   };
 
-  const buildPayload = () => {
+  /**
+ * Ensures all activityTime strings in a list of activities have the format "HH:mm:ss".
+ * If the time is in "HH:mm" format, it appends ":00".
+ *
+ * @param {Array<Object>} activities - The list of activity objects.
+ * @returns {Array<Object>} The list of activities with corrected activityTime formats.
+ */
+const formatActivityTime=(activities)=> {
+  // Check if the input is a valid array
+  if (!Array.isArray(activities)) {
+    console.error("Input must be an array of activities.");
+    return [];
+  }
+
+  // Iterate over each activity in the list
+  const formattedActivities = activities.map(activity => {
+    // Get the activityTime
+    let time = activity.activityTime;
+
+    // Check if time exists and is a string
+    if (typeof time === 'string') {
+      // The desired format is "HH:mm:ss" which has a length of 8.
+      // The current incorrect format is "HH:mm" which has a length of 5.
+      if (time.length === 5) {
+        // If the length is 5, it's missing seconds, so we append ":00"
+        time = time + ":00";
+        // Update the activity object with the corrected time
+        return {
+          ...activity, // Keep all other properties of the activity
+          activityTime: time // Update the activityTime property
+        };
+      }
+    }
+    // Return the activity object unchanged if the time is already correct (length 8),
+    // or if the activityTime is not a string/doesn't exist.
+    return activity;
+  });
+
+  return formattedActivities;
+}
+
+  const buildPayload = (type) => {
+
     return {
       refNo: form.refNo,
       serviceDate: form.serviceDate,
@@ -189,15 +253,19 @@ export default function TugServices() {
       serviceType: form.serviceType,
       serviceRemarks: form.serviceRemarks,
       remarks: form.remarks,
-      isActive: form.isActive,
-      activities: activities,
+      isActive: type === "cancel" ? 0 : form.isActive,
+      activities: formatActivityTime(activities),
       serviceId: form.serviceId,
       editedBy: form?.serviceId ? userData?.username : "",
       editedDate: form?.serviceId ? new Date().toISOString() : null,
       createdBy: form?.serviceId ? form?.createdBy : userData?.username,
-      createdDate: form?.serviceId ? form?.createdDate : new Date().toISOString(),
+      createdDate: form?.serviceId
+        ? form?.createdDate
+        : new Date().toISOString(),
       motherVessel: form.motherVessel,
-      tugName: form?.serviceId ? form?.tugName : userData?.tugName
+      tugName: form?.serviceId ? form?.tugName : userData?.tugName,
+      commandRankAndName: form?.commandRankAndName,
+      pairWith: form?.pairWith
     };
   };
 
@@ -222,9 +290,8 @@ export default function TugServices() {
     return isValid;
   };
 
-  const handleSave = async () => {
-    const payload = buildPayload();
-    console.log(payload)
+  const handleSave = async (type) => {
+    const payload = buildPayload(type);
     if (!validateForm()) {
       toast.error("Please fill in all mandatory fields.");
       return;
@@ -283,7 +350,9 @@ export default function TugServices() {
       locationName: "",
       vesselName: "",
       motherVessel: null,
-      tugName: ""
+      tugName: "",
+      commandRankAndName:'',
+      pairWith:''
     });
     setActivities(defaultActivitiesList);
     setSelectedLocation("");
@@ -344,7 +413,9 @@ export default function TugServices() {
         draughtForward: vesselData?.dwt,
       });
     } else if (name === "motherVessel") {
-      const motherVesselData = motherVessels.find((v) => v.vesselName === value);
+      const motherVesselData = motherVessels.find(
+        (v) => v.vesselName === value
+      );
       setSelectedMotherVessel({
         motherVessel: motherVesselData?.vesselName,
       });
@@ -386,7 +457,7 @@ export default function TugServices() {
         imoCode: newValue?.imoCode,
         draughtAft: newValue?.arrDraft,
         draughtForward: newValue?.dwt,
-        vesselType: newValue?.vesselType
+        vesselType: newValue?.vesselType,
       });
       setErrors({ ...errors, vesselName: false });
     }
@@ -406,28 +477,125 @@ export default function TugServices() {
     setActivities(updated);
   };
 
-  
   // Handle file upload
-  const handleFileUpload = (event) => {
+  const handleFileUpload = async (event) => {
     const newFiles = Array.from(event.target.files);
     const updatedList = [...files, ...newFiles];
-    setFiles(updatedList);
+    const payload = {
+      serviceId: form?.serviceId,
+      uploadedBy: userData?.username,
+      documents: updatedList,
+    }
+
+    try {
+        const res = await tugService.uploadService(payload);
+        getUploadedDocs(form?.serviceId);
+    } catch (err) {
+      console.error("Error saving:", err);
+      toast.error("Unable to save form");
+    } finally {
+      setLoading(false);
+    }
   };
 
+  const getUploadedDocs = async(serviceId) =>{
+    if(!serviceId) return;
+    try{
+      const res = await tugService.getServiceById(serviceId,TUG_SERVICES.GET_UPLOADED_DOC_BY_ID);
+      setFiles(res);
+      // console.log(res)
+    }catch (err) {
+      console.error("Error saving:", err);
+      toast.error("Unable to save form");
+    } finally {
+      setLoading(false);
+    }
+  }
   // Handle file delete
-  const handleDelete = (index) => {
-    const updatedList = files.filter((_, i) => i !== index);
-    setFiles(updatedList);
+  const handleDelete = async (file) => {
+    try {
+    const response = await tugService.deleteFileById(
+      file?.documentId,
+      TUG_SERVICES.DELETE_DOC_BY_ID
+    );
+    getUploadedDocs(form?.serviceId);
+  } catch (err) {
+    console.error("Error saving:", err);
+    toast.error("Unable to save form");
+  } finally {
+    setLoading(false);
+  }
   };
 
   // Handle file download (for demo only)
-  const handleDownload = (file) => {
-    const url = URL.createObjectURL(file);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = file.name;
-    a.click();
-    URL.revokeObjectURL(url);
+  const handleDownload = async (file) => {
+    try {  
+      // Call API — now returns full response
+      const response = await tugService.getfilesById(
+        file?.documentId,
+        TUG_SERVICES.DOWNLOAD_DOC_BY_ID
+      );
+  
+      // Ensure valid blob
+      if (!response || !response.data) {
+        throw new Error("Empty file response from server");
+      }
+  
+      // Extract headers
+      const contentType = response.headers["content-type"] || "application/octet-stream";
+      const contentDisposition = response.headers["content-disposition"];
+  
+      let fileName = file?.fileName || "downloaded_file";
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="?(.+)"?/);
+        if (match && match[1]) fileName = match[1];
+      }
+  
+      // Create and trigger download
+      const blob = new Blob([response.data], { type: contentType });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+  
+      document.body.appendChild(link);
+      link.click();
+  
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("File download failed:", error);
+    }
+  };  
+
+  const handleCloseModal = () => {
+    setOpenModal(false);
+  };
+
+  const handleOpenModel = (isFrom,data=null) => {
+    if(isFrom === 'cancleTrx'){
+     setConfirmModelText(
+      {
+    title:"Confirm Cancilation",
+    message:"Are you sure you want to cancel this item? This action cannot be undone.",
+    confirmButtonName:"Proceed to cancel",
+    cancelButtonName:"No",
+    type: isFrom
+  }
+     )
+    }else if(isFrom === 'deleteFile'){
+     setConfirmModelText(
+      {
+    title:"Confirm File Deletion",
+    message:"Are you sure you want to delete this file? This action cannot be undone.",
+    confirmButtonName:"Proceed to delete",
+    cancelButtonName:"No",
+    type: isFrom,
+    data: data
+  }
+     )
+    }
+    setOpenModal(true);
   };
 
   return (
@@ -526,19 +694,19 @@ export default function TugServices() {
                 </div>
               </div>
               {/* 2nd Row */}
-              
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div className="grid grid-cols-2 gap-3">
-                    {/* IMO No */}
-                    <TextField
-                      size="small"
-                      fullWidth
-                      label="IMO No"
-                      name="imoCode"
-                      value={form.imoCode}
-                      onChange={handleChange}
-                    />
-                    {/* Length Overall */}
+                <div className="grid grid-cols-2 gap-3">
+                  {/* IMO No */}
+                  <TextField
+                    size="small"
+                    fullWidth
+                    label="IMO No"
+                    name="imoCode"
+                    value={form.imoCode}
+                    onChange={handleChange}
+                  />
+                  {/* Length Overall */}
                   <TextField
                     size="small"
                     fullWidth
@@ -548,12 +716,13 @@ export default function TugServices() {
                     onChange={handleChange}
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                {/* Draught Fwd */}
+                <div className="grid grid-cols-2 gap-3">                  
+                <div className="grid grid-cols-2 gap-1">
+                  {/* Draught Fwd */}
                   <TextField
                     size="small"
                     fullWidth
-                    label="Draught Fwd (M)"
+                    label="Draught Fwd(M)"
                     name="draughtForward"
                     value={form.draughtForward}
                     onChange={handleChange}
@@ -567,8 +736,7 @@ export default function TugServices() {
                     value={form.draughtAft}
                     onChange={handleChange}
                   />
-                </div>
-                <div className="grid grid-cols-1 gap-3">
+                  </div>
                    {/* Type Of Vesssel */}
                    <TextField
                     size="small"
@@ -579,12 +747,9 @@ export default function TugServices() {
                     onChange={handleChange}
                   />
                 </div>
-              </div>
-              {/* 3rd Row */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
                 <div className="grid grid-cols-2 gap-3">
-                 {/* Location */}
-                 <FormControl
+                   {/* Location */}
+                   <FormControl
                     fullWidth
                     size="small"
                     variant="outlined"
@@ -639,6 +804,25 @@ export default function TugServices() {
                     </Select>
                   </FormControl>
                 </div>
+              </div>
+              {/* 3rd Row */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
+                <div className="grid grid-cols-2 gap-3">
+                <TextField
+                  size="small"
+                  label="Pairwith"
+                  name="pairwith"
+                  value={form.pairwith}
+                  onChange={handleChange}
+                />
+                 <TextField
+                  size="small"
+                  label="Command Rank and Name"
+                  name="commandRanAndName"
+                  value={form.commandRanAndName}
+                  onChange={handleChange}
+                />
+                </div>
                 {/* Service Remarks */}
                 <TextField
                   size="small"
@@ -651,7 +835,7 @@ export default function TugServices() {
                   onChange={handleChange}
                 />
                 <div className="grid grid-cols-1 gap-3">
-                {/* Remarks */}
+                  {/* Remarks */}
                   <TextField
                     size="small"
                     fullWidth
@@ -672,7 +856,7 @@ export default function TugServices() {
                 padding: "8px",
                 display: "flex",
                 flexDirection: "column",
-                height: 500, // It defines the Table Height 
+                height: 500, // It defines the Table Height
               }}
             >
               {/* Scrollable Table */}
@@ -764,9 +948,11 @@ export default function TugServices() {
               </div>
               <div style={{ paddingTop: "8px", borderTop: "1px solid #eee" }}>
                 <div class="flex justify-between items-center">
-                  <Button variant="outlined" size="small" onClick={addRow}>
-                    Add New Row
-                  </Button>
+                  {!!form?.isActive && (
+                    <Button variant="outlined" size="small" onClick={addRow}>
+                      Add New Row
+                    </Button>
+                  )}
                   <div>
                     Total: {activities?.length.toString().padStart(2, "0")}
                   </div>
@@ -776,7 +962,7 @@ export default function TugServices() {
           </Card>
           {/* Buttons */}
           <div className="mt-4 flex gap-2 justify-center">
-            {form?.serviceId && (
+            {form?.isActive && form?.serviceId && (
               <Button
                 variant="contained"
                 size="small"
@@ -786,22 +972,26 @@ export default function TugServices() {
                 Create New Job
               </Button>
             )}
-            <Button
-              variant="outlined"
-              size="small"
-              color="secondary"
-              onClick={handleClearOrReset}
-            >
-              {form?.serviceId ? "Reset" : "Clear"}
-            </Button>
-            <Button
-              variant="contained"
-              size="small"
-              color="primary"
-              onClick={handleSave}
-            >
-              {form?.serviceId ? "Update" : "Save"}
-            </Button>
+            {form?.isActive && (
+              <>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  color="secondary"
+                  onClick={handleClearOrReset}
+                >
+                  {form?.serviceId ? "Reset" : "Clear"}
+                </Button>
+                <Button
+                  variant="contained"
+                  size="small"
+                  color="primary"
+                  onClick={() => handleSave("saveUpdate")}
+                >
+                  {form?.serviceId ? "Update" : "Save"}
+                </Button>
+              </>
+            )}
             <Button
               variant="outlined"
               size="small"
@@ -810,59 +1000,84 @@ export default function TugServices() {
             >
               Print
             </Button>
-          </div>
-          <div className="w-full mt-8 p-4 bg-white border rounded shadow-sm">
-      {/* Upload Button */}
-      <label className="block w-full">
-        <input
-          type="file"
-          multiple
-          onChange={handleFileUpload}
-          className="hidden"
-        />
-        <div className="w-full bg-green-600 text-white py-2 text-center rounded cursor-pointer hover:bg-green-700 transition">
-          Upload Files
-        </div>
-      </label>
-
-      {/* Uploaded File List */}
-      <div className="mt-5">
-        <h3 className="text-lg font-semibold mb-2">Uploaded Files</h3>
-
-        {files.length === 0 ? (
-          <p className="text-gray-500 text-sm">No files uploaded yet.</p>
-        ) : (
-          <ul className="space-y-2">
-            {files.map((file, index) => (
-              <li
-                key={index}
-                className="flex items-center justify-between bg-gray-100 px-3 py-2 rounded"
+            {form?.isActive && form?.serviceId && (
+              <Button
+                variant="outlined"
+                size="small"
+                color="error"
+                onClick={()=>handleOpenModel('cancleTrx')}
               >
-                <span className="truncate max-w-[60%]">{file.name}</span>
-                <div className="flex gap-2">
-                  <Button
-                    variant="contained"
-                    onClick={() => handleDownload(file)}
-                    className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 text-sm"
-                  >
-                    <FaDownload/>
-                  </Button>
-                  <Button
-                    variant="contained"
-                    onClick={() => handleDelete(index)}
-                    className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-sm"
-                  >
-                    <FaTrash />
-                  </Button>
+                Cancel
+              </Button>
+            )}
+          </div>
+          {form?.serviceId && (
+          <div className="w-full mt-8 p-4 bg-white border rounded shadow-sm">
+            {/* Upload Button */}
+
+            {form?.isActive && (
+              <label className="block w-full">
+                <input
+                  type="file"
+                  multiple
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+                <div className="w-full bg-green-600 text-white py-2 text-center rounded cursor-pointer hover:bg-green-700 transition">
+                  Upload Files
                 </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </div>
+              </label>
+            )}
+
+            {/* Uploaded File List */}
+            <div className="mt-5">
+              <h3 className="text-lg font-semibold mb-2">Uploaded Files</h3>
+
+              {files.length === 0 ? (
+                <p className="text-gray-500 text-sm">No files uploaded yet.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {files.map((file, index) => (
+                    <li
+                      key={index}
+                      className="flex items-center justify-between bg-gray-100 px-3 py-2 rounded"
+                    >
+                      <span className="truncate max-w-[60%] text-gray-600">{file.fileName}</span>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="contained"
+                          onClick={() => handleDownload(file)}
+                          className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 text-sm"
+                        >
+                          <FaDownload />
+                        </Button>
+                        <Button
+                          variant="contained"
+                          onClick={()=>handleOpenModel('deleteFile',file)}
+                          className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-sm"
+                        >
+                          <FaTrash />
+                        </Button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+            )}
         </div>
       </div>
+      {/* Confirmation Modal */}
+      <ConfirmModal
+        open={openModal}
+        onClose={handleCloseModal}
+        onConfirm={onModelConfirmation}
+        title={confirmModelText?.title}
+        message={confirmModelText?.message}
+        confirmButtonName={confirmModelText?.confirmButtonName}
+        cancelButtonName={confirmModelText?.cancelButtonName}
+      />
     </>
   );
 }
