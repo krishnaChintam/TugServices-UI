@@ -195,7 +195,49 @@ export default function TugServices() {
     );
   };
 
+  /**
+ * Ensures all activityTime strings in a list of activities have the format "HH:mm:ss".
+ * If the time is in "HH:mm" format, it appends ":00".
+ *
+ * @param {Array<Object>} activities - The list of activity objects.
+ * @returns {Array<Object>} The list of activities with corrected activityTime formats.
+ */
+const formatActivityTime=(activities)=> {
+  // Check if the input is a valid array
+  if (!Array.isArray(activities)) {
+    console.error("Input must be an array of activities.");
+    return [];
+  }
+
+  // Iterate over each activity in the list
+  const formattedActivities = activities.map(activity => {
+    // Get the activityTime
+    let time = activity.activityTime;
+
+    // Check if time exists and is a string
+    if (typeof time === 'string') {
+      // The desired format is "HH:mm:ss" which has a length of 8.
+      // The current incorrect format is "HH:mm" which has a length of 5.
+      if (time.length === 5) {
+        // If the length is 5, it's missing seconds, so we append ":00"
+        time = time + ":00";
+        // Update the activity object with the corrected time
+        return {
+          ...activity, // Keep all other properties of the activity
+          activityTime: time // Update the activityTime property
+        };
+      }
+    }
+    // Return the activity object unchanged if the time is already correct (length 8),
+    // or if the activityTime is not a string/doesn't exist.
+    return activity;
+  });
+
+  return formattedActivities;
+}
+
   const buildPayload = (type) => {
+
     return {
       refNo: form.refNo,
       serviceDate: form.serviceDate,
@@ -212,7 +254,7 @@ export default function TugServices() {
       serviceRemarks: form.serviceRemarks,
       remarks: form.remarks,
       isActive: type === "cancel" ? 0 : form.isActive,
-      activities: activities,
+      activities: formatActivityTime(activities),
       serviceId: form.serviceId,
       editedBy: form?.serviceId ? userData?.username : "",
       editedDate: form?.serviceId ? new Date().toISOString() : null,

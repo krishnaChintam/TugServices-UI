@@ -49,8 +49,8 @@ const Dashboard = () => {
         const { activityDate: date, activityTime: time } = activity ?? {};
         if (!date || !time) return { iso: null, display: null };
         return {
-          iso: `${date}T${time}`,
-          display: `${reformatDate(date)}T${time}`,
+          iso: `${date} ${time}`,
+          display: `${reformatDate(date)} ${time}`,
         };
       };
 
@@ -87,7 +87,7 @@ const Dashboard = () => {
       item.cost = (item?.serviceType === "REFRESH ANCHOR" || item?.serviceType === "REPOSITION") ? 0 : getCalculatedCost(item,userData),
       item.count = (item?.serviceType === "REFRESH ANCHOR" || item?.serviceType === "REPOSITION") ? 0 : 1,
       item.foc = (item?.serviceType === "REFRESH ANCHOR" || item?.serviceType === "REPOSITION") ? 1 : 0
-      item.isCanceled = item?.isActive ? 'True' : 'False'
+      item.isCanceled = item?.isActive ? 'Active' : 'Cancelled'
     });
     setData(response);
     setFilteredData(response);
@@ -211,7 +211,7 @@ const getExcelColums = (excelType = 'regular') => {
   // 3. Additional columns specific to weekly export
   const weeklyAdd = {
     pairWith: "Pair With",
-    commandAndRank: "Command/Rank and Name",
+    commandAndRank: "Command Rank and Name",
   };
 
   // 4. Start with base mapping
@@ -267,6 +267,43 @@ const getExcelColums = (excelType = 'regular') => {
     // Assuming saveAs is available (e.g., from file-saver library)
     saveAs(blob, FileName);
   };
+
+/**
+ * Filters the list of columns based on the user's role.
+ * If the user role is 'user', it excludes columns with field names:
+ * 'jobNo', 'cost', 'count', 'foc', and 'isCanceled'.
+ *
+ * @param {Array<Object>} columns - The array of all column definitions.
+ * @param {Object} userData - An object containing the user's role, e.g., { role: 'user' }.
+ * @returns {Array<Object>} The filtered array of column definitions.
+ */
+const getTableColoums = (columns) => {
+  // Define the fields to be hidden for 'user' role
+  const restrictedFields = [
+    "jobNo",
+    "cost",
+    "count",
+    "foc",
+    "isCanceled"
+  ];
+
+  // Check the user's role
+  const isUserRole = userData && userData?.role === 'user';
+console.log(isUserRole)
+  // If the user role is NOT 'user', return all columns
+  if (!isUserRole) {
+    return columns;
+  }
+
+  // If the user role IS 'user', filter out the restricted columns
+  const filteredColumns = columns.filter(column => {
+    // The .includes() method checks if the column.field is in the restrictedFields array.
+    // The '!' negates the result, meaning we keep the column ONLY if it's NOT restricted.
+    return !restrictedFields.includes(column.field);
+  });
+
+  return filteredColumns;
+};
 
   const columns = [
     { 
@@ -363,7 +400,7 @@ const getExcelColums = (excelType = 'regular') => {
       maxWidth: 280 
     },
     {
-      headerName: "CommandRank And Name",
+      headerName: "Command Rank And Name",
       field: "commandRankAndName",
       tooltipField: "commandRankAndName",
       sortable: true,
@@ -511,7 +548,7 @@ const getExcelColums = (excelType = 'regular') => {
           rowData={filteredData}
           sortable={true}
           filter={true}
-          columnDefs={columns}
+          columnDefs={getTableColoums(columns)}
           quickFilterValue={search}
         />
       </Box>
