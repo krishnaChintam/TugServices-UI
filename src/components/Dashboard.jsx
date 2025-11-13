@@ -627,6 +627,8 @@ const Dashboard = () => {
         for (const file of res) {
           await handleDownload(file);
         }
+      }else{
+        toast.warn('There are no files available for download.')
       }
     } catch (err) {
       console.error("Error saving:", err);
