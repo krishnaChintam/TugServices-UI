@@ -1,7 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { FaEdit, FaSearch } from "react-icons/fa";
+import { FaEdit, FaSearch, FaDownload, FaTrash } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import { Box, IconButton, Button, TextField,Menu, MenuItem } from "@mui/material";
+import {
+  Box,
+  IconButton,
+  Button,
+  TextField,
+  FormControl,
+  Select,
+  InputLabel,
+  MenuItem,
+} from "@mui/material";
 import DataTable from "./common/DataTable";
 import { tugService } from "../api/apiServices";
 import Loader from "@/components/Loader.jsx";
@@ -12,18 +21,31 @@ import ToastContainer from "../components/common/toster.jsx";
 import { TUG_SERVICES } from "../api/apiConfig.js";
 import CommonServices from "./common/commonService";
 import ListButton from "./common/listButton";
+import ConfirmModal from "@/components/common/ConfirmModal.jsx";
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const defaultDataValue = "1";
   const currentDate = new Date().toISOString().slice(0, 10);
-  const pastDate = new Date(new Date().setMonth(new Date().getMonth() - 3)).toISOString().slice(0, 10); // 3 months back
+  const pastDate = new Date(new Date().setMonth(new Date().getMonth() - 3))
+    .toISOString()
+    .slice(0, 10); // 3 months back
   const userData = JSON.parse(localStorage.getItem("userData"));
   const [startDate, setStartDate] = useState(pastDate);
   const [endDate, setEndDate] = useState(currentDate);
   const [filteredData, setFilteredData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
-  const [data, setData] = useState([]);
+  const [originalData, setOriginalData] = useState([]);
+  const [openModal, setOpenModal] = useState(false);
+  const [statusFilter, setStatusFilter] = useState(defaultDataValue);
+  const [confirmModelInfo, setConfirmModelText] = useState({
+    title: "",
+    message: "",
+    confirmButtonName: "",
+    cancelButtonName: "",
+    data: null,
+  });
 
   useEffect(() => {
     fetchData();
@@ -33,7 +55,7 @@ const Dashboard = () => {
     setLoading(true);
     const url =
       userData?.role === "Admin"
-        ? `${TUG_SERVICES.GET_ALL_SERVICES}?fromDate=${startDate}&toDate=${endDate}` 
+        ? `${TUG_SERVICES.GET_ALL_SERVICES}?fromDate=${startDate}&toDate=${endDate}`
         : `${TUG_SERVICES?.GET_SERVICE_BY_USERNAME}/${userData?.username}?fromDate=${startDate}&toDate=${endDate}`;
 
     let response = await tugService.getAllServices(url);
@@ -84,79 +106,159 @@ const Dashboard = () => {
       };
 
       item.totalHours = calculateDuration(proceedISO, castOffISO);
-      item.cost = (item?.serviceType === "REFRESH ANCHOR" || item?.serviceType === "REPOSITION") ? 0 : getCalculatedCost(item,userData),
-      item.count = (item?.serviceType === "REFRESH ANCHOR" || item?.serviceType === "REPOSITION") ? 0 : 1,
-      item.foc = (item?.serviceType === "REFRESH ANCHOR" || item?.serviceType === "REPOSITION") ? 1 : 0
-      item.isCanceled = item?.isActive ? 'Active' : 'Cancelled'
+      (item.cost =
+        item?.serviceType === "REFRESH ANCHOR" ||
+        item?.serviceType === "REPOSITION"
+          ? 0
+          : getCalculatedCost(item, userData)),
+        (item.count =
+          item?.serviceType === "REFRESH ANCHOR" ||
+          item?.serviceType === "REPOSITION"
+            ? 0
+            : 1),
+        (item.foc =
+          item?.serviceType === "REFRESH ANCHOR" ||
+          item?.serviceType === "REPOSITION"
+            ? 1
+            : 0);
+      item.isCanceled = item?.isActive ? "Active" : "Cancelled";
     });
-    setData(response);
-    setFilteredData(response);
+    setOriginalData(response);
+    handleStatusChange(defaultDataValue, response);
     setLoading(false);
   };
 
-/**
- * Calculates the final cost based on total service hours compared to a package's included hours.
- * It also updates the 'item' object's cost property and returns the calculated cost.
- *
- * @param {object} item - The activity item object to update (expected to have totalHours).
- * @param {object} userData - User package and cost data (packageCost, perHourCost, noOfHours).
- * @returns {number} The calculated final cost.
- */
-const getCalculatedCost = (item, userData) => {
-  // 1. Safely extract and default required values
-  const { totalHours } = item ?? {};
-  const { noOfHours = 2, packageCost = 2700, perHourCost = 670 } = userData ?? {};
-  let totalServiceHours = 0;
+  /**
+   * Calculates the final cost based on total service hours compared to a package's included hours.
+   * It also updates the 'item' object's cost property and returns the calculated cost.
+   *
+   * @param {object} item - The activity item object to update (expected to have totalHours).
+   * @param {object} userData - User package and cost data (packageCost, perHourCost, noOfHours).
+   * @returns {number} The calculated final cost.
+   */
+  const getCalculatedCost = (item, userData) => {
+    // 1. Safely extract and default required values
+    const { totalHours } = item ?? {};
+    const {
+      noOfHours = 2,
+      packageCost = 2700,
+      perHourCost = 670,
+    } = userData ?? {};
+    let totalServiceHours = 0;
 
-  // 2. Parse the totalHours string to get a numeric value
-  if (totalHours) {
-    const parts = totalHours.split(' ');
-    const value = parseFloat(parts[0]);
-    const unit = parts[1];
+    // 2. Parse the totalHours string to get a numeric value
+    if (totalHours) {
+      const parts = totalHours.split(" ");
+      const value = parseFloat(parts[0]);
+      const unit = parts[1];
 
-    if (!isNaN(value)) {
-      totalServiceHours = (unit === 'hr') ? value : (value / 60);
+      if (!isNaN(value)) {
+        totalServiceHours = unit === "hr" ? value : value / 60;
+      }
     }
-  }
 
-  // 3. Calculate the difference (overage)
-  const overageHours = totalServiceHours - noOfHours;
+    // 3. Calculate the difference (overage)
+    const overageHours = totalServiceHours - noOfHours;
 
-  // 4. Determine the final cost and update the item object
-  let finalCost;
+    // 4. Determine the final cost and update the item object
+    let finalCost;
 
-  if (overageHours <= 0) {
-    // No overage
-    finalCost = packageCost;
-  } else {
-    // Calculate full overage hours to charge (rounding up to the next full hour)
-    const chargeableOverageHours = Math.ceil(overageHours);
+    if (overageHours <= 0) {
+      // No overage
+      finalCost = packageCost;
+    } else {
+      // Calculate full overage hours to charge (rounding up to the next full hour)
+      const chargeableOverageHours = Math.ceil(overageHours);
 
-    const additionalCost = chargeableOverageHours * perHourCost;
-    finalCost = packageCost + additionalCost;
-  }
+      const additionalCost = chargeableOverageHours * perHourCost;
+      finalCost = packageCost + additionalCost;
+    }
 
-  // Update the item object and return the final cost
-  item.cost = finalCost;
-  return finalCost;
-};
+    // Update the item object and return the final cost
+    item.cost = finalCost;
+    return finalCost;
+  };
 
-  const onRowClicked = (props) => {
+  const handleCancel = async () => {
+    let payload = confirmModelInfo?.data;
+    payload.isActive = 0;
+    payload.serviceDate = CommonServices.serviceFormatDate(payload.serviceDate);
+    try {
+      if (payload?.serviceId) {
+        setLoading(true);
+        const res = await tugService.updateService(payload.serviceId, payload);
+        if (res?.serviceId && !res?.isActive) {
+          toast.success("Transaction cancelled successfully.");
+          fetchData();
+        }
+      }
+    } catch (err) {
+      console.error("Error saving:", err);
+      toast.error("Unable to cancel transaction");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setOpenModal(false);
+  };
+
+  const onModelConfirmation = () => {
+    handleCloseModal(); // Close the modal after action
+    handleCancel();
+  };
+
+  const handleOpenModel = (data) => {
+    setConfirmModelText({
+      title: "Confirm Cancellation",
+      message:
+        "Are you sure you want to cancel this item? This action cannot be undone.",
+      confirmButtonName: "Proceed to cancel",
+      cancelButtonName: "No",
+      data: data,
+    });
+    setOpenModal(true);
+  };
+
+  const onRowClicked = (props, actionType) => {
     const data = props?.data;
     if (data?.serviceId) {
-      navigate(`/tugservices/${data?.serviceId}`);
+      if (actionType === "edit") {
+        navigate(`/tugservices/${data?.serviceId}`);
+      } else if (actionType === "downloadAll") {
+        getUploadedDocs(data?.serviceId);
+      } else if (actionType === "cancelTrx") {
+        handleOpenModel(data);
+      }
     }
   };
 
   const ActionRenderer = (props) => {
     return (
-      <IconButton
-        size="small"
-        color="primary"
-        onClick={() => onRowClicked(props)}
-      >
-        <FaEdit />
-      </IconButton>
+      <>
+        <IconButton
+          size="small"
+          color="primary"
+          onClick={() => onRowClicked(props, "edit")}
+        >
+          <FaEdit />
+        </IconButton>
+        <IconButton
+          size="small"
+          color="primary"
+          onClick={() => onRowClicked(props, "downloadAll")}
+        >
+          <FaDownload />
+        </IconButton>
+        <IconButton
+          size="small"
+          color="error"
+          onClick={() => onRowClicked(props, "cancelTrx")}
+        >
+          <FaTrash />
+        </IconButton>
+      </>
     );
   };
 
@@ -174,82 +276,84 @@ const getCalculatedCost = (item, userData) => {
   };
 
   /**
- * Generates and returns the final Excel column mapping
- * based on export type and user role.
- *
- * @param {string} excelType - Type of Excel export ('regular' | 'weekly')
- * @param {string} role - Current user role ('admin' | 'user')
- * @returns {object} - Final column mapping for export
- */
-const getExcelColums = (excelType = 'regular') => {
-  const role = userData?.role;
+   * Generates and returns the final Excel column mapping
+   * based on export type and user role.
+   *
+   * @param {string} excelType - Type of Excel export ('regular' | 'weekly')
+   * @param {string} role - Current user role ('admin' | 'user')
+   * @returns {object} - Final column mapping for export
+   */
+  const getExcelColums = (excelType = "regular") => {
+    const role = userData?.role;
 
-  // 1. Base column mapping (default for all exports)
-  const base = {
-    serviceDate: "Date",
-    refNo: "Voucher No",
-    locationName: "Location",
-    motherVessel: "Mother Vessel",
-    vesselName: "Daughter Vessel",
-    tugName: "Tug Name",
-    serviceRemarks: "Type of Service",
-    remarks: "Remarks",
-    proceedDateTime: "Proceed Timing",
-    castOffDateTime: "Cast Of Timing",
-    totalHours: "Total Hours",
-    pairWith: 'Pair With',
-    commandRankAndName: 'CommandRank And Name',
-    jobNo: "Job No",
-    cost: "Cost",
-    count: "Count",
-    foc: "FOC",
+    // 1. Base column mapping (default for all exports)
+    const base = {
+      serviceDate: "Date",
+      refNo: "Voucher No",
+      locationName: "Location",
+      motherVessel: "Mother Vessel",
+      vesselName: "Daughter Vessel",
+      tugName: "Tug Name",
+      serviceRemarks: "Type of Service",
+      remarks: "Remarks",
+      proceedDateTime: "Proceed Timing",
+      castOffDateTime: "Cast Off Timing",
+      totalHours: "Total Hours",
+      pairWith: "Pair With",
+      commandRankAndName: "CommandRank And Name",
+      jobNo: "Job No",
+      cost: "Cost",
+      count: "Count",
+      foc: "FOC",
+    };
+
+    // 2. Columns to exclude for restricted users or weekly export
+    const exclude = ["jobNo", "cost", "count", "foc"];
+
+    // 3. Additional columns specific to weekly export
+    const weeklyAdd = {
+      pairWith: "Pair With",
+      commandAndRank: "Command Rank and Name",
+    };
+
+    // 4. Start with base mapping
+    let cols = { ...base };
+
+    // 5. Remove restricted columns for 'weekly' type or 'user' role
+    if (excelType === "weekly" || role === "user") {
+      cols = Object.fromEntries(
+        Object.entries(cols).filter(([key]) => !exclude.includes(key))
+      );
+    }
+
+    // 6. Add weekly-specific columns at the end for 'weekly' export type
+    if (excelType === "weekly") {
+      Object.assign(cols, weeklyAdd);
+    }
+
+    // 7. Return final mapping
+    return cols;
   };
 
-  // 2. Columns to exclude for restricted users or weekly export
-  const exclude = ['jobNo', 'cost', 'count', 'foc'];
-
-  // 3. Additional columns specific to weekly export
-  const weeklyAdd = {
-    pairWith: "Pair With",
-    commandAndRank: "Command Rank and Name",
-  };
-
-  // 4. Start with base mapping
-  let cols = { ...base };
-
-  // 5. Remove restricted columns for 'weekly' type or 'user' role
-  if (excelType === 'weekly' || role === 'user') {
-    cols = Object.fromEntries(
-      Object.entries(cols).filter(([key]) => !exclude.includes(key))
-    );
-  }
-
-  // 6. Add weekly-specific columns at the end for 'weekly' export type
-  if (excelType === 'weekly') {
-    Object.assign(cols, weeklyAdd);
-  }
-
-  // 7. Return final mapping
-  return cols;
-}
-
-  const exportToExcel = (excelType='regular') => {
+  const exportToExcel = (excelType = "regular") => {
     // 1. Define the mapping from data field name to desired Excel header name
     const columnMapping = getExcelColums(excelType);
     // Use the keys of the mapping as the columns to extract from the row data
     const exportColumns = Object.keys(columnMapping);
 
     // 2. Filter data and apply the new headers
-    const mappedData = filteredData?.filter(row => row.isActive === 1)?.map((row) => {
-      const newRow = {};
-      exportColumns.forEach((colKey) => {
-        // Use the mapped header name as the key in the new object
-        const excelHeader = columnMapping[colKey];
-        // Assign the value from the original row data
-        newRow[excelHeader] = row[colKey];
+    const mappedData = filteredData
+      ?.filter((row) => row.isActive === 1)
+      ?.map((row) => {
+        const newRow = {};
+        exportColumns.forEach((colKey) => {
+          // Use the mapped header name as the key in the new object
+          const excelHeader = columnMapping[colKey];
+          // Assign the value from the original row data
+          newRow[excelHeader] = row[colKey];
+        });
+        return newRow;
       });
-      return newRow;
-    });
 
     // Existing XLSX library code remains the same
     const worksheet = XLSX.utils.json_to_sheet(mappedData);
@@ -263,63 +367,59 @@ const getExcelColums = (excelType = 'regular') => {
     const blob = new Blob([excelBuffer], {
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     });
-    const FileName = excelType === 'regular' ? "TugJobDetails.xlsx" : "WeeklyTugActivitiesReport.xlsx"
+    const FileName =
+      excelType === "regular"
+        ? "TugJobDetails.xlsx"
+        : "WeeklyTugActivitiesReport.xlsx";
     // Assuming saveAs is available (e.g., from file-saver library)
     saveAs(blob, FileName);
   };
 
-/**
- * Filters the list of columns based on the user's role.
- * If the user role is 'user', it excludes columns with field names:
- * 'jobNo', 'cost', 'count', 'foc', and 'isCanceled'.
- *
- * @param {Array<Object>} columns - The array of all column definitions.
- * @param {Object} userData - An object containing the user's role, e.g., { role: 'user' }.
- * @returns {Array<Object>} The filtered array of column definitions.
- */
-const getTableColoums = (columns) => {
-  // Define the fields to be hidden for 'user' role
-  const restrictedFields = [
-    "jobNo",
-    "cost",
-    "count",
-    "foc",
-    "isCanceled"
-  ];
+  /**
+   * Filters the list of columns based on the user's role.
+   * If the user role is 'user', it excludes columns with field names:
+   * 'jobNo', 'cost', 'count', 'foc', and 'isCanceled'.
+   *
+   * @param {Array<Object>} columns - The array of all column definitions.
+   * @param {Object} userData - An object containing the user's role, e.g., { role: 'user' }.
+   * @returns {Array<Object>} The filtered array of column definitions.
+   */
+  const getTableColoums = (columns) => {
+    // Define the fields to be hidden for 'user' role
+    const restrictedFields = ["jobNo", "cost", "count", "foc"];
 
-  // Check the user's role
-  const isUserRole = userData && userData?.role === 'user';
-console.log(isUserRole)
-  // If the user role is NOT 'user', return all columns
-  if (!isUserRole) {
-    return columns;
-  }
+    // Check the user's role
+    const isUserRole = userData && userData?.role === "user";
+    // If the user role is NOT 'user', return all columns
+    if (!isUserRole) {
+      return columns;
+    }
 
-  // If the user role IS 'user', filter out the restricted columns
-  const filteredColumns = columns.filter(column => {
-    // The .includes() method checks if the column.field is in the restrictedFields array.
-    // The '!' negates the result, meaning we keep the column ONLY if it's NOT restricted.
-    return !restrictedFields.includes(column.field);
-  });
+    // If the user role IS 'user', filter out the restricted columns
+    const filteredColumns = columns.filter((column) => {
+      // The .includes() method checks if the column.field is in the restrictedFields array.
+      // The '!' negates the result, meaning we keep the column ONLY if it's NOT restricted.
+      return !restrictedFields.includes(column.field);
+    });
 
-  return filteredColumns;
-};
+    return filteredColumns;
+  };
 
   const columns = [
-    { 
-      headerName: "Date", 
-      field: "serviceDate", 
-      sortable: true, 
-      width: 120, 
-      maxWidth: 220 
-    },
-    { 
-      headerName: "Voucher No", 
-      field: "refNo", 
+    {
+      headerName: "Date",
+      field: "serviceDate",
       sortable: true,
-      tooltipField:"refNo", 
-      width: 150, 
-      maxWidth: 250 
+      width: 120,
+      maxWidth: 220,
+    },
+    {
+      headerName: "Voucher No",
+      field: "refNo",
+      sortable: true,
+      tooltipField: "refNo",
+      width: 150,
+      maxWidth: 250,
     },
     {
       headerName: "Location",
@@ -327,7 +427,7 @@ console.log(isUserRole)
       tooltipField: "locationName",
       sortable: true,
       width: 140,
-      maxWidth: 300
+      maxWidth: 300,
     },
     {
       headerName: "Mother Vessel",
@@ -335,7 +435,7 @@ console.log(isUserRole)
       tooltipField: "motherVessel",
       sortable: true,
       width: 150,
-      maxWidth: 250
+      maxWidth: 250,
     },
     {
       headerName: "Daughter Vessel",
@@ -343,14 +443,15 @@ console.log(isUserRole)
       tooltipField: "vesselName",
       sortable: true,
       width: 160,
-      maxWidth: 250
+      maxWidth: 250,
     },
-    { headerName: "Tug Name",
+    {
+      headerName: "Tug Name",
       field: "tugName",
-      tooltipField: "tugName", 
+      tooltipField: "tugName",
       sortable: true,
-      width: 125, 
-      maxWidth: 220 
+      width: 125,
+      maxWidth: 220,
     },
     {
       headerName: "Type of Service",
@@ -358,14 +459,15 @@ console.log(isUserRole)
       tooltipField: "serviceRemarks",
       sortable: true,
       width: 180,
-      maxWidth: 280 
+      maxWidth: 280,
     },
-    { headerName: "Remarks", 
+    {
+      headerName: "Remarks",
       field: "remarks",
-      tooltipField: "remarks", 
-      sortable: true, 
+      tooltipField: "remarks",
+      sortable: true,
       width: 200,
-      maxWidth: 300 
+      maxWidth: 300,
     },
     {
       headerName: "Proceed Timing",
@@ -373,15 +475,15 @@ console.log(isUserRole)
       tooltipField: "proceedDateTime",
       sortable: true,
       width: 180,
-      maxWidth: 250 
+      maxWidth: 250,
     },
     {
-      headerName: "Cast Of Timing",
+      headerName: "Cast Off Timing",
       field: "castOffDateTime",
       tooltipField: "castOffDateTime",
       sortable: true,
       width: 180,
-      maxWidth: 250 
+      maxWidth: 250,
     },
     {
       headerName: "Total Hours",
@@ -389,7 +491,7 @@ console.log(isUserRole)
       tooltipField: "totalHours",
       sortable: true,
       width: 130,
-      maxWidth: 280 
+      maxWidth: 280,
     },
     {
       headerName: "Pair With",
@@ -397,7 +499,7 @@ console.log(isUserRole)
       tooltipField: "pairWith",
       sortable: true,
       width: 130,
-      maxWidth: 280 
+      maxWidth: 280,
     },
     {
       headerName: "Command Rank And Name",
@@ -405,7 +507,7 @@ console.log(isUserRole)
       tooltipField: "commandRankAndName",
       sortable: true,
       width: 230,
-      maxWidth: 280 
+      maxWidth: 280,
     },
     {
       headerName: "Job No",
@@ -413,7 +515,7 @@ console.log(isUserRole)
       tooltipField: "jobNo",
       sortable: true,
       width: 100,
-      maxWidth: 220
+      maxWidth: 220,
     },
     {
       headerName: "Cost",
@@ -421,7 +523,7 @@ console.log(isUserRole)
       tooltipField: "cost",
       sortable: true,
       width: 100,
-      maxWidth: 200
+      maxWidth: 200,
     },
     {
       headerName: "Count",
@@ -429,7 +531,7 @@ console.log(isUserRole)
       tooltipField: "count",
       sortable: true,
       width: 100,
-      maxWidth: 150 
+      maxWidth: 150,
     },
     {
       headerName: "FOC",
@@ -437,14 +539,14 @@ console.log(isUserRole)
       tooltipField: "foc",
       sortable: true,
       width: 100,
-      maxWidth: 120
+      maxWidth: 120,
     },
     {
       headerName: "Status",
       field: "isCanceled",
       sortable: true,
       width: 100,
-      maxWidth: 120
+      maxWidth: 120,
     },
     {
       headerName: "Actions",
@@ -452,7 +554,7 @@ console.log(isUserRole)
       sortable: false,
       filter: false,
       pinned: "right",
-      width: 100,
+      width: 120,
       cellRenderer: ActionRenderer,
     },
   ];
@@ -466,9 +568,93 @@ console.log(isUserRole)
     {
       label: "Weekly Format",
       onClick: () => exportToExcel("weekly"),
-    }
+    },
   ];
 
+  const handleNavToServiceForm = () => {
+    navigate("/tugservices");
+  };
+
+  const handleDownload = async (file) => {
+    try {
+      // Call API — now returns full response
+      const response = await tugService.getfilesById(
+        file?.documentId,
+        TUG_SERVICES.DOWNLOAD_DOC_BY_ID
+      );
+
+      // Ensure valid blob
+      if (!response || !response.data) {
+        throw new Error("Empty file response from server");
+      }
+
+      // Extract headers
+      const contentType =
+        response.headers["content-type"] || "application/octet-stream";
+      const contentDisposition = response.headers["content-disposition"];
+
+      let fileName = file?.fileName || "downloaded_file";
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="?(.+)"?/);
+        if (match && match[1]) fileName = match[1];
+      }
+
+      // Create and trigger download
+      const blob = new Blob([response.data], { type: contentType });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+
+      document.body.appendChild(link);
+      link.click();
+
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("File download failed:", error);
+    }
+  };
+
+  const getUploadedDocs = async (serviceId) => {
+    if (!serviceId) return;
+    try {
+      const res = await tugService.getServiceById(serviceId,TUG_SERVICES.GET_UPLOADED_DOC_BY_ID);
+      console.log(res)
+      if (res?.length) {
+        for (const file of res) {
+          await handleDownload(file);
+        }
+      }else{
+        toast.custom((t) => (
+          <div
+          className={`${
+            t.visible ? "animate-enter" : "animate-leave"
+          } bg-yellow-100 text-yellow-900 px-4 py-3 rounded shadow-md border border-yellow-300 font-medium`}
+        >
+              There are no files available for download.
+            </div>
+          ),{duration: 2000});
+      }
+    } catch (err) {
+      console.error("Error saving:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStatusChange = (value, data) => {
+    setStatusFilter(value); // 1. Update the filter state
+    let updatedData = data?.length ? data : originalData; // 2. ***START with the complete, original list***
+    if (value !== "" && (value == "1" || value == "0")) {
+      // 3. Filter the *original* list based on the selected status
+      // Note: Assuming 'selected' is a string like "true" or "false"
+      updatedData = updatedData.filter(
+        (item) => String(item.isActive) === value
+      );
+    }
+    setFilteredData(updatedData); // 4. Update the displayed/filtered list
+  };
 
   return (
     <>
@@ -478,26 +664,54 @@ console.log(isUserRole)
         {/* Filter Bar */}
         <Box
           display="flex"
+          flexWrap="wrap"
           alignItems="center"
-          gap={1}
-          marginBottom={1}
+          gap={2}
           sx={{
-            border: "1px solid #d1d5db", // light gray border (Tailwind's gray-300)
+            border: "1px solid #d1d5db",
             borderRadius: "8px",
-            padding: "8px 12px",
-            backgroundColor: "#fff", // optional: keeps a clean card-like look
+            padding: "12px",
+            backgroundColor: "#fff",
           }}
+          className="flex-col sm:flex-row sm:flex-wrap"
         >
-          {/* Global Search (AG Grid quick filter with embedded search button) */}
+          {/* Search Input */}
           <TextField
             size="small"
             label="Search (Real-time)"
             variant="outlined"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            className="w-full sm:w-[200px]"
           />
-          <div className="h-6 w-px bg-gray-300"></div>
-          {/* Date range filters */}
+
+          {/* Divider */}
+          <div className="hidden sm:block h-6 w-px bg-gray-300"></div>
+
+          {/* Status Filter */}
+          <FormControl
+            size="small"
+            variant="outlined"
+            className="w-full sm:w-[180px]"
+          >
+            <InputLabel id="status-filter-label">Status</InputLabel>
+            <Select
+              labelId="status-filter-label"
+              label="Status"
+              name="status"
+              value={statusFilter}
+              onChange={(e) => handleStatusChange(e?.target?.value, null)}
+            >
+              <MenuItem value="-1">All</MenuItem>
+              <MenuItem value="1">Active</MenuItem>
+              <MenuItem value="0">InActive</MenuItem>
+            </Select>
+          </FormControl>
+
+          {/* Divider */}
+          <div className="hidden sm:block h-6 w-px bg-gray-300"></div>
+
+          {/* Start Date */}
           <TextField
             size="small"
             label="Start Date"
@@ -505,41 +719,53 @@ console.log(isUserRole)
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
             slotProps={{
-              htmlInput: {
-                max: currentDate, // use htmlInput instead of input
-              },
+              htmlInput: { max: currentDate },
             }}
+            className="w-full sm:w-[180px]"
           />
+
+          {/* End Date */}
           <TextField
             size="small"
-            type="date"
             label="End Date"
+            type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
             slotProps={{
-              htmlInput: {
-                min: startDate || ""
-              },
+              htmlInput: { min: startDate || "" },
             }}
+            className="w-full sm:w-[180px]"
           />
 
-          {/* Search button for date range */}
+          {/* Search Button */}
           <Button
-            className="bg-green-600 text-white px-3 py-1 rounded hover:bg-blue-800 focus:outline-none active:outline-none active:ring-0"
             variant="contained"
-            size="small"
+            size="medium"
             startIcon={<FaSearch size={14} />}
             onClick={handleDateFilter}
+            className="bg-green-600 text-white w-full sm:w-[140px] hover:bg-green-700"
           >
             Search
           </Button>
-          <div style={{ marginLeft: "auto" }}>
-          <ListButton 
-          buttonLabel="Export Data" 
-          items={ExportMenuItems} 
-          buttonColor="indigo"
-          className="ml-auto bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 focus:outline-none active:outline-none active:ring-0"
-          />
+
+          {/* Right Side Buttons */}
+          <div className="flex flex-col sm:flex-row w-full sm:w-auto sm:ml-auto gap-2">
+            <Button
+              variant="contained"
+              size="medium"
+              color="primary"
+              onClick={handleNavToServiceForm}
+              className="w-full sm:w-auto"
+            >
+              Create New Job
+            </Button>
+
+            <ListButton
+              buttonLabel="Export Data"
+              items={ExportMenuItems}
+              buttonColor="indigo"
+              className="w-full sm:w-auto bg-green-600 text-white hover:bg-green-700"
+            />
           </div>
         </Box>
 
@@ -552,6 +778,16 @@ console.log(isUserRole)
           quickFilterValue={search}
         />
       </Box>
+      {/* Confirmation Modal */}
+      <ConfirmModal
+        open={openModal}
+        onClose={handleCloseModal}
+        onConfirm={onModelConfirmation}
+        title={confirmModelInfo?.title}
+        message={confirmModelInfo?.message}
+        confirmButtonName={confirmModelInfo?.confirmButtonName}
+        cancelButtonName={confirmModelInfo?.cancelButtonName}
+      />
     </>
   );
 };

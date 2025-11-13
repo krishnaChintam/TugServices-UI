@@ -15,6 +15,7 @@ import {
   InputLabel,
   FormControl,
   Autocomplete,
+  Tooltip,
 } from "@mui/material";
 import { useParams, useNavigate } from "react-router-dom";
 import { FaTrash, FaDownload } from "react-icons/fa";
@@ -301,14 +302,30 @@ const formatActivityTime=(activities)=> {
     try {
       if (payload?.serviceId) {
         const res = await tugService.updateService(payload.serviceId, payload);
+        if(res?.error){
+          if(res?.message?.length){
+            toast.error(res?.message);            
+          }else{
+            toast.error("Unable to save form");            
+          }
+        }else{
         toast.success("Updated successfully");
         patchResponseData(res);
+      }
       } else {
         const res = await tugService.createService(payload);
-        const newId = res?.serviceId;
-        toast.success("Saved successfully", { duration: 2000 });
-        navigate(`/tugservices/${newId}`);
-        patchResponseData(res);
+        if(res?.error){
+          if(res?.message?.length){
+            toast.error(res?.message);            
+          }else{
+            toast.error("Unable to save form");            
+          }
+        }else{
+          const newId = res?.serviceId;
+          toast.success("Saved successfully", { duration: 2000 });
+          navigate(`/tugservices/${newId}`);
+          patchResponseData(res);
+        }
       }
     } catch (err) {
       console.error("Error saving:", err);
@@ -576,7 +593,7 @@ const formatActivityTime=(activities)=> {
     if(isFrom === 'cancleTrx'){
      setConfirmModelText(
       {
-    title:"Confirm Cancilation",
+    title:"Confirm Cancellation",
     message:"Are you sure you want to cancel this item? This action cannot be undone.",
     confirmButtonName:"Proceed to cancel",
     cancelButtonName:"No",
@@ -722,7 +739,11 @@ const formatActivityTime=(activities)=> {
                   <TextField
                     size="small"
                     fullWidth
-                    label="Draught Fwd(M)"
+                    label={
+                      <Tooltip title="Draught Forward(M)">
+                        <span >DRF</span>
+                      </Tooltip>
+                    }
                     name="draughtForward"
                     value={form.draughtForward}
                     onChange={handleChange}
@@ -731,7 +752,11 @@ const formatActivityTime=(activities)=> {
                   <TextField
                     size="small"
                     fullWidth
-                    label="Draught Aft (M)"
+                    label={
+                      <Tooltip title="Draught After(M)">
+                        <span >DRA</span>
+                      </Tooltip>
+                    }
                     name="draughtAft"
                     value={form.draughtAft}
                     onChange={handleChange}
@@ -810,16 +835,16 @@ const formatActivityTime=(activities)=> {
                 <div className="grid grid-cols-2 gap-3">
                 <TextField
                   size="small"
-                  label="Pairwith"
-                  name="pairwith"
-                  value={form.pairwith}
+                  label="Pair With"
+                  name="pairWith"
+                  value={form.pairWith}
                   onChange={handleChange}
                 />
                  <TextField
                   size="small"
                   label="Command Rank and Name"
-                  name="commandRanAndName"
-                  value={form.commandRanAndName}
+                  name="commandRankAndName"
+                  value={form.commandRankAndName}
                   onChange={handleChange}
                 />
                 </div>
@@ -992,14 +1017,6 @@ const formatActivityTime=(activities)=> {
                 </Button>
               </>
             )}
-            <Button
-              variant="outlined"
-              size="small"
-              color="primary"
-              onClick={() => window.print()}
-            >
-              Print
-            </Button>
             {form?.isActive && form?.serviceId && (
               <Button
                 variant="outlined"
