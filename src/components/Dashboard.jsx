@@ -619,20 +619,25 @@ const Dashboard = () => {
   const getUploadedDocs = async (serviceId) => {
     if (!serviceId) return;
     try {
-      const res = await tugService.getServiceById(
-        serviceId,
-        TUG_SERVICES.GET_UPLOADED_DOC_BY_ID
-      );
+      const res = await tugService.getServiceById(serviceId,TUG_SERVICES.GET_UPLOADED_DOC_BY_ID);
+      console.log(res)
       if (res?.length) {
         for (const file of res) {
           await handleDownload(file);
         }
       }else{
-        toast.warn('There are no files available for download.')
+        toast.custom((t) => (
+          <div
+          className={`${
+            t.visible ? "animate-enter" : "animate-leave"
+          } bg-yellow-100 text-yellow-900 px-4 py-3 rounded shadow-md border border-yellow-300 font-medium`}
+        >
+              There are no files available for download.
+            </div>
+          ),{duration: 2000});
       }
     } catch (err) {
       console.error("Error saving:", err);
-      toast.error("Unable to save form");
     } finally {
       setLoading(false);
     }
