@@ -89,10 +89,12 @@ export default function TugServices() {
 
   const onModelConfirmation = () => {
     handleCloseModal(); // Close the modal after action
-    if(confirmModelText?.type === 'cancleTrx,deleteFile'){
+    if(confirmModelText?.type === 'cancleTrx'){
       handleSave("cancel");
     }else if(confirmModelText?.type === 'deleteFile'){
       handleDelete(confirmModelText?.data)
+    }else if(confirmModelText?.type === 'activate'){
+      handleSave("activate");
     }
   };
 
@@ -254,7 +256,7 @@ const formatActivityTime=(activities)=> {
       serviceType: form.serviceType,
       serviceRemarks: form.serviceRemarks,
       remarks: form.remarks,
-      isActive: type === "cancel" ? 0 : form.isActive,
+      isActive: type === "cancel" ? 0 : type === "activate" ? 1 : form.isActive,
       activities: formatActivityTime(activities),
       serviceId: form.serviceId,
       editedBy: form?.serviceId ? userData?.username : "",
@@ -286,7 +288,14 @@ const formatActivityTime=(activities)=> {
       tempErrors.vesselName = true;
       isValid = false;
     }
-
+    if(!selectedTypeOfService?.serviceType){
+      tempErrors.serviceType = true;
+      isValid = false;
+    }
+    if(!selectedMotherVessel?.motherVessel){
+      tempErrors.motherVessel = true;
+      isValid = false;
+    }
     setErrors(tempErrors);
     return isValid;
   };
@@ -376,6 +385,7 @@ const formatActivityTime=(activities)=> {
     setSelectedVessel("");
     setSelectedMotherVessel("");
     setSelectedTypeOfService("");
+    setErrors({});
     toast.success("Form cleared. Ready for new entry!");
   };
 
@@ -591,26 +601,30 @@ const formatActivityTime=(activities)=> {
 
   const handleOpenModel = (isFrom,data=null) => {
     if(isFrom === 'cancleTrx'){
-     setConfirmModelText(
-      {
+     setConfirmModelText({
     title:"Confirm Cancellation",
-    message:"Are you sure you want to cancel this item? This action cannot be undone.",
+    message:"Are you sure you want to cancel this item?.",
     confirmButtonName:"Proceed to cancel",
     cancelButtonName:"No",
     type: isFrom
-  }
-     )
+  })
     }else if(isFrom === 'deleteFile'){
-     setConfirmModelText(
-      {
+     setConfirmModelText({
     title:"Confirm File Deletion",
     message:"Are you sure you want to delete this file? This action cannot be undone.",
     confirmButtonName:"Proceed to delete",
     cancelButtonName:"No",
     type: isFrom,
     data: data
-  }
-     )
+  })
+    }else if(isFrom === 'activate'){
+      setConfirmModelText({
+      title:"Confirm Activation",
+      message:"Are you sure you want to Activate?.",
+      confirmButtonName:"Proceed to activate",
+      cancelButtonName:"No",
+      type: isFrom
+    })
     }
     setOpenModal(true);
   };
@@ -689,7 +703,7 @@ const formatActivityTime=(activities)=> {
                     error={errors.motherVessel}
                   >
                     <InputLabel id="motherVessel-label">
-                      Mother Vessel
+                      Mother Vessel *
                     </InputLabel>
                     <Select
                       labelId="motherVessel-label"
@@ -803,7 +817,7 @@ const formatActivityTime=(activities)=> {
                     fullWidth
                     size="small"
                     variant="outlined"
-                    error={errors.serviceTypeId}
+                    error={errors.serviceType}
                   >
                     <InputLabel id="typeOfService-label">
                       Type of Service *
@@ -858,6 +872,11 @@ const formatActivityTime=(activities)=> {
                   name="serviceRemarks"
                   value={form.serviceRemarks}
                   onChange={handleChange}
+                  sx={{
+                    "& .MuiInputBase-root textarea": {
+                      resize: "vertical"   // or "both"
+                    }
+                  }}
                 />
                 <div className="grid grid-cols-1 gap-3">
                   {/* Remarks */}
@@ -870,6 +889,11 @@ const formatActivityTime=(activities)=> {
                     name="remarks"
                     value={form.remarks}
                     onChange={handleChange}
+                    sx={{
+                      "& .MuiInputBase-root textarea": {
+                        resize: "vertical"   // or "both"
+                      }
+                    }}
                   />
                 </div>
               </div>
@@ -1025,6 +1049,16 @@ const formatActivityTime=(activities)=> {
                 onClick={()=>handleOpenModel('cancleTrx')}
               >
                 Cancel
+              </Button>
+            )}
+            {!form?.isActive && form?.serviceId && (
+              <Button
+                variant="outlined"
+                size="small"
+                color="success"
+                onClick={()=>handleOpenModel('activate')}
+              >
+                Activate
               </Button>
             )}
           </div>

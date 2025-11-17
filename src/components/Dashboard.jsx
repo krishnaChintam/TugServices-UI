@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FaEdit, FaSearch, FaDownload, FaTrash } from "react-icons/fa";
+import { FaEdit, FaSearch, FaDownload, FaTimesCircle,FaCheckCircle } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import {
   Box,
@@ -10,6 +10,7 @@ import {
   Select,
   InputLabel,
   MenuItem,
+  Tooltip
 } from "@mui/material";
 import DataTable from "./common/DataTable";
 import { tugService } from "../api/apiServices";
@@ -27,19 +28,22 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const defaultDataValue = "1";
   const currentDate = new Date().toISOString().slice(0, 10);
-  const pastDate = new Date(new Date().setMonth(new Date().getMonth() - 3))
-    .toISOString()
-    .slice(0, 10); // 3 months back
+  const pastDate = new Date(new Date().setMonth(new Date().getMonth() - 3)).toISOString().slice(0, 10); // 3 months back
+  const now = new Date();
+  // Last date of the current month (YYYY-MM-DD)
+  const lastDateOfCurrentMonth = new Date(Date.UTC(now.getFullYear(),now.getMonth() + 1,0)).toISOString().slice(0, 10);
+  // 1st date of the month, 2 months before current month (YYYY-MM-DD)
+  const startDateOfPastMonth = new Date(Date.UTC(now.getFullYear(),now.getMonth() - 2,1)).toISOString().slice(0, 10);
   const userData = JSON.parse(localStorage.getItem("userData"));
-  const [startDate, setStartDate] = useState(pastDate);
-  const [endDate, setEndDate] = useState(currentDate);
+  const [startDate, setStartDate] = useState(startDateOfPastMonth);
+  const [endDate, setEndDate] = useState(lastDateOfCurrentMonth);
   const [filteredData, setFilteredData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [originalData, setOriginalData] = useState([]);
   const [openModal, setOpenModal] = useState(false);
   const [statusFilter, setStatusFilter] = useState(defaultDataValue);
-  const [confirmModelInfo, setConfirmModelText] = useState({
+  const [confirmModelInfo, setConfirmModelInfo] = useState({
     title: "",
     message: "",
     confirmButtonName: "",
@@ -181,7 +185,7 @@ const Dashboard = () => {
 
   const handleCancel = async () => {
     let payload = confirmModelInfo?.data;
-    payload.isActive = 0;
+    payload.isActive = confirmModelInfo?.type === 'activate' ? 1 : 0;
     payload.serviceDate = CommonServices.serviceFormatDate(payload.serviceDate);
     try {
       if (payload?.serviceId) {
@@ -189,8 +193,10 @@ const Dashboard = () => {
         const res = await tugService.updateService(payload.serviceId, payload);
         if (res?.serviceId && !res?.isActive) {
           toast.success("Transaction cancelled successfully.");
-          fetchData();
+        }else if(res?.serviceId && res?.isActive){
+          toast.success("Transaction activated successfully.");          
         }
+        fetchData();
       }
     } catch (err) {
       console.error("Error saving:", err);
@@ -209,15 +215,26 @@ const Dashboard = () => {
     handleCancel();
   };
 
-  const handleOpenModel = (data) => {
-    setConfirmModelText({
-      title: "Confirm Cancellation",
-      message:
-        "Are you sure you want to cancel this item? This action cannot be undone.",
-      confirmButtonName: "Proceed to cancel",
-      cancelButtonName: "No",
+  const handleOpenModel = (data,actionType) => {
+    if(actionType === 'cancelTrx'){
+    setConfirmModelInfo({
+      title:"Confirm Cancellation",
+      message:"Are you sure you want to cancel this item?.",
+      confirmButtonName:"Proceed to cancel",
+      cancelButtonName:"No",
       data: data,
+      type: actionType
     });
+  } else if( actionType === 'activate'){
+    setConfirmModelInfo({
+      title:"Confirm Activation",
+      message:"Are you sure you want to Activate?.",
+      confirmButtonName:"Proceed to activate",
+      cancelButtonName:"No",
+      data: data,
+      type: actionType
+    });
+  }
     setOpenModal(true);
   };
 
@@ -228,8 +245,8 @@ const Dashboard = () => {
         navigate(`/tugservices/${data?.serviceId}`);
       } else if (actionType === "downloadAll") {
         getUploadedDocs(data?.serviceId);
-      } else if (actionType === "cancelTrx") {
-        handleOpenModel(data);
+      } else if (actionType === "cancelTrx" || actionType === 'activate') {
+        handleOpenModel(data,actionType);
       }
     }
   };
@@ -251,13 +268,27 @@ const Dashboard = () => {
         >
           <FaDownload />
         </IconButton>
+        {props?.data?.isActive ? (
+           <Tooltip title="Cancel Transaction">
         <IconButton
           size="small"
           color="error"
           onClick={() => onRowClicked(props, "cancelTrx")}
         >
-          <FaTrash />
+          <FaTimesCircle />
         </IconButton>
+        </Tooltip>
+        ) : (
+          <Tooltip title="Activate Transaction">
+          <IconButton
+          size="small"
+          color="success"
+          onClick={() => onRowClicked(props, "activate")}
+        >
+          <FaCheckCircle />
+          </IconButton>
+          </Tooltip>
+        )}
       </>
     );
   };
