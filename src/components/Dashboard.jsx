@@ -87,15 +87,11 @@ const Dashboard = () => {
           a?.description?.toUpperCase().includes(keyword.toUpperCase())
         );
 
-      const { iso: proceedISO, display: proceedDisplay } = getDateTime(
-        findActivity("PROCEEDED TO ASSIST")
-      );
-      const { iso: castOffISO, display: castOffDisplay } = getDateTime(
-        findActivity("TUG LINE CAST OFF")
-      );
-
+      const { iso: proceedISO, display: proceedDisplay } = getDateTime(findActivity("PROCEEDED"));
+      const { iso: castOffISO, display: castOffDisplay } = getDateTime(findActivity("TUG LINE CAST OFF"));
+      const { iso: serviceCompletedISO, display: serviceCompleted } = getDateTime(findActivity("SERVICE COMPLETED"));
       item.proceedDateTime = proceedDisplay;
-      item.castOffDateTime = castOffDisplay;
+      item.castOffDateTime = (castOffDisplay || serviceCompleted);
 
       const calculateDuration = (startISO, endISO) => {
         if (!startISO || !endISO) return "00:00";
@@ -109,7 +105,7 @@ const Dashboard = () => {
           : `${(diffMs / 60_000).toFixed(2)} min`;
       };
 
-      item.totalHours = calculateDuration(proceedISO, castOffISO);
+      item.totalHours = calculateDuration(proceedISO, (castOffISO || serviceCompletedISO));
       (item.cost =
         item?.serviceType === "REFRESH ANCHOR" ||
         item?.serviceType === "REPOSITION"
@@ -331,7 +327,7 @@ const Dashboard = () => {
       castOffDateTime: "Cast Off Timing",
       totalHours: "Total Hours",
       pairWith: "Pair With",
-      commandRankAndName: "CommandRank And Name",
+      commandRankAndName: "Command Rank And Name",
       jobNo: "Job No",
       cost: "Cost",
       count: "Count",
@@ -344,7 +340,7 @@ const Dashboard = () => {
     // 3. Additional columns specific to weekly export
     const weeklyAdd = {
       pairWith: "Pair With",
-      commandAndRank: "Command Rank and Name",
+      commandRankAndName: "Command Rank and Name",
     };
 
     // 4. Start with base mapping
@@ -361,7 +357,6 @@ const Dashboard = () => {
     if (excelType === "weekly") {
       Object.assign(cols, weeklyAdd);
     }
-
     // 7. Return final mapping
     return cols;
   };
@@ -774,7 +769,7 @@ const Dashboard = () => {
             size="medium"
             startIcon={<FaSearch size={14} />}
             onClick={handleDateFilter}
-            className="bg-green-600 text-white w-full sm:w-[140px] hover:bg-green-700"
+            className="bg-green-600 text-white w-full sm:w-[100px] hover:bg-green-700"
           >
             Search
           </Button>

@@ -20,7 +20,7 @@ export const defaultActivitiesList =  [
       "activityId": null,
       "activityDate": currentDate,
       "activityTime": currentTime,
-      "description": "PROCEEDED TO ASSIST"
+      "description": "PROCEEDED"
   },
   {
       "activityId": null,
