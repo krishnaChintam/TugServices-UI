@@ -13,7 +13,7 @@ const ENV = {
 
 // Current environment (you can change this based on your needs)
 const CURRENT_ENV = ENV.DEVELOPMENT;
-const URL = 'http://45.76.159.84:8080/services-0.0.1-SNAPSHOT';
+const URL = 'https://tugserviceapi.vems.com.sg/services-0.0.1-SNAPSHOT';
 // Service URLs configuration
 export const SERVICE_URLS = {
   [ENV.DEVELOPMENT]: {
